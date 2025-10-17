@@ -1,244 +1,470 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Effective Car Price Calculator</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PCP & Financing Playground — Real Cost Calculator (v7)</title>
 <style>
-:root{--bg:#0f1724;--card:#071122;--muted:#9aa4b2;--accent:#00d1b2;--glass:rgba(255,255,255,0.03);color-scheme:dark}
+:root{--bg:#0f1724;--card:#071122;--muted:#9aa4b2;--accent:#00d1b2;--glass:rgba(255,255,255,0.03);--highlight:rgba(0,209,178,0.12);color-scheme:dark}
 html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6}
-.container{max-width:1020px;margin:22px auto;padding:20px}
-.header{display:flex;align-items:center;gap:14px;justify-content:space-between}
+.container{max-width:1100px;margin:18px auto;padding:12px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+.header{display:flex;align-items:center;gap:12px;justify-content:space-between}
 h1{margin:0;font-size:18px}
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
-.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
-.col{flex:1 1 280px;min-width:220px}
-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.subtitle{color:var(--muted);font-size:13px;margin-top:6px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.col{flex:1 1 240px;min-width:200px}
+.control-box{padding:10px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03)}
+.label-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;cursor:pointer}
 input[type=range]{width:100%}
-.value{font-size:16px;font-weight:700;color:#fff;margin-top:6px} /* numeric values bolded */
-.outputs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
-.out{background:var(--glass);padding:12px;border-radius:8px}
-.out .k{font-size:12px;color:var(--muted)} .out .v{font-size:16px;font-weight:700}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.value{font-size:15px;font-weight:700;color:#fff;margin-top:6px} 
+.outputs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.out{background:var(--glass);padding:10px;border-radius:8px}
+.out .k{font-size:12px;color:var(--muted)} .out .v{font-size:15px;font-weight:700}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
 .controls input[type=number], select{background:rgba(255,255,255,0.02);border:none;color:#fff;padding:8px;border-radius:8px;width:100%}
-.small{font-size:13px;color:var(--muted)}
-.actions{display:flex;gap:8px;align-items:center;margin-top:12px}
-.btn{background:var(--accent);color:#052026;padding:8px 12px;border-radius:10px;font-weight:700;border:none;cursor:pointer}
-.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
-canvas{display:block;margin:12px auto;border-radius:8px;background:transparent}
-.footer{margin-top:12px;color:var(--muted);font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+.btn{background:var(--accent);color:#052026;padding:8px 10px;border-radius:10px;font-weight:700;border:none;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:7px 10px;border-radius:8px;cursor:pointer}
+canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
+.footer{margin-top:10px;color:var(--muted);font-size:12px}
 .inline{display:flex;gap:8px;align-items:center}
 .legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
 .copyok{color:#8de2c6;font-weight:700}
-.boldhead{font-weight:400;color:#fff;margin-bottom:6px} /* headers now normal weight */
-@media(max-width:840px){.outputs{grid-template-columns:1fr} .grid-3{grid-template-columns:1fr} .header{flex-direction:column;align-items:flex-start}}
+.info{display:inline-block;margin-left:6px;color:var(--muted);cursor:pointer}
+.toggle{display:inline-flex;align-items:center;gap:8px;margin-top:6px}
+
+/* Tooltip styles: gentle 0.5s fade-in/out */
+.tooltip{position:fixed;background:#02121a;color:#cfeee3;padding:12px;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.6);max-width:340px;font-size:13px;z-index:9000;line-height:1.35;opacity:0;transform:translateY(6px);transition:opacity .5s ease, transform .5s ease;pointer-events:none}
+.tooltip.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+
+/* modal overlay must be on top */
+.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,11,0.6);display:none;align-items:center;justify-content:center;z-index:20000}
+.modal{background:#071122;border-radius:12px;padding:18px;max-width:720px;color:#e6eef6;box-shadow:0 12px 40px rgba(0,0,0,0.6);max-height:90vh;overflow:auto}
+.modal h2{margin-top:0}
+.close-x{float:right;background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+
+/* slight glow on active control */
+.active-tip{box-shadow:0 8px 24px var(--highlight);border-radius:8px;}
+
+/* responsive tweaks */
+@media(max-width:900px){
+  .outputs{grid-template-columns:repeat(2,1fr)} 
+  .grid-3{grid-template-columns:1fr}
+  .header{flex-direction:column;align-items:flex-start}
+  .subtitle{font-size:12px}
+  .outputs .out .v{font-size:14px}
+  .container{padding:10px;margin:8px}
+  canvas{height:220px!important}
+}
+@media(max-width:520px){
+  .outputs{grid-template-columns:1fr}
+  .row{gap:8px}
+  .col{min-width:140px}
+  .value{font-size:14px}
+  h1{font-size:16px}
+}
 </style>
 </head>
 <body>
-<div class="container card">
+<div class="container card" id="app">
   <div class="header">
     <div>
-      <h1>Effective Car Price Calculator</h1>
-      <div class="small">What is the effective price of a new car when taking into account a manufacturer deposit contribution and a low interest finance incentive?</div>
+      <h1 id="title">PCP & Financing Playground — Real Cost Calculator (v7)</h1>
+      <div class="subtitle" id="subtitle">Compare paying cash vs spreading payments. Experiment with returns, inflation, tax, loan APR and balloon options. Works offline.</div>
     </div>
     <div class="inline">
-      <button id="downloadBtn" class="btn">Download HTML</button>
-      <button id="exportCsvBtn" class="btn-ghost">Export summary CSV</button>
-      <button id="exportMonthlyCsvBtn" class="btn-ghost">Export monthly CSV</button>
+      <button id="helpBtn" class="btn-ghost" title="Open help and FAQ">Help / FAQ</button>
+      <button id="downloadBtn" class="btn" title="Download a snapshot HTML of this page">Download HTML</button>
+      <button id="exportCsvBtn" class="btn-ghost" title="Export summary CSV">Export summary CSV</button>
+      <button id="exportMonthlyCsvBtn" class="btn-ghost" title="Export monthly CSV">Export monthly CSV</button>
     </div>
   </div>
 
   <!-- DEAL PARAMETERS at top -->
-  <div style="margin-top:12px" class="card">
-    <div class="small boldhead">Deal parameters (edit before adjusting sliders)</div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:180px"><label>On-the-road price (£)</label><input id="price" type="number" value="39990"></div>
-      <div style="flex:1;min-width:180px"><label>Customer deposit (£)</label><input id="cust_dep" type="number" value="8600"></div>
-      <div style="flex:1;min-width:180px"><label>Tesla deposit contribution (£)</label><input id="tesla_contrib" type="number" value="3000"></div>
-      <div style="flex:1;min-width:150px"><label>Monthly payment (£)</label><input id="monthly" type="number" value="299"></div>
-      <div style="flex:1;min-width:150px"><label>Monthly payments (count)</label><input id="nmonthly" type="number" value="47"></div>
-      <div style="flex:1;min-width:180px"><label>Optional final payment (balloon)</label><input id="balloon" type="number" value="17334"></div>
+  <div style="margin-top:10px" class="card">
+    <div class="small" style="font-weight:600;color:#fff">Deal parameters (edit before adjusting sliders)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Total on-the-road cash price of the car.">On-the-road price (£)</label><input id="price" type="number" value="39990"></div>
+      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Amount you pay up front (before dealer contribution).">Customer deposit (£)</label><input id="cust_dep" type="number" value="8600"></div>
+      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Dealer or manufacturer contribution to the deposit (reduces your outlay).">Dealer contribution (£)</label><input id="tesla_contrib" type="number" value="3000"></div>
+      <div class="col control-box" style="flex:1;min-width:120px"><label data-tip="Monthly repayment you make (or will be computed from APR if that option is checked).">Monthly payment (£)</label><input id="monthly" type="number" value="299"></div>
+      <div class="col control-box" style="flex:1;min-width:120px"><label data-tip="Number of monthly payments you'll make (excluding final balloon month).">Monthly payments (count)</label><input id="nmonthly" type="number" value="47"></div>
+      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Optional final balloon payment at the end if you keep the car. Uncheck 'I'll pay the balloon' to set to zero.">Optional final payment (balloon)</label><input id="balloon" type="number" value="17334"></div>
+    </div>
+    <div class="small" style="margin-top:8px">Tip: check "Compute monthly from Loan APR" below to auto-calc monthly payment from APR, financed amount and balloon.</div>
+  </div>
+
+  <div class="row" style="margin-top:10px;">
+    <div class="col control-box">
+      <div class="label-row">
+        <label data-tip="Nominal pre-tax annual return you expect to earn on investments. This is before tax; tax can be applied to nominal or real returns via the toggle.">Nominal investment return (% pa)</label>
+        <span id="nominal_val" data-tip="Nominal return is your expected pre-tax annual investment return.">5.0</span>
+      </div>
+      <input id="nominal" type="range" min="0" max="12" step="0.1" value="5" aria-label="Nominal return">
+      <div class="value"><span style="color:var(--muted);font-weight:600;margin-right:6px">after tax:</span> <span id="nominal_after_tax" style="font-weight:700" data-tip="Nominal return after applying the tax slider.">3.75</span>%</div>
+    </div>
+
+    <div class="col control-box">
+      <div class="label-row">
+        <label data-tip="General price inflation used to compute the real discount rate (reduces purchasing power).">Inflation (% pa)</label>
+        <span id="inflation_val" data-tip="Inflation reduces the real value of money over time.">3.0</span>
+      </div>
+      <input id="inflation" type="range" min="0" max="8" step="0.1" value="3" aria-label="Inflation">
+      <div class="value"><span class="info" data-tip="General price inflation. Used to compute the real discount rate.">ℹ️</span></div>
+    </div>
+
+    <div class="col control-box">
+      <div class="label-row">
+        <label data-tip="Tax applied to investment gains. Use the toggle to apply tax to nominal or inflation-adjusted (real) returns.">Tax rate on returns (%)</label>
+        <span id="tax_val" data-tip="This percentage reduces your nominal returns when tax-on-nominal is selected.">25.0</span>
+      </div>
+      <input id="tax" type="range" min="0" max="60" step="0.5" value="25" aria-label="Tax rate">
+      <div class="value">
+        <div class="toggle" style="display:inline-flex;align-items:center;gap:8px">
+          <input id="tax_on_real" type="checkbox"><label for="tax_on_real" class="small">Apply tax to inflation-adjusted (real) returns</label>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="row" style="margin-top:14px;">
-    <div class="col">
-      <div class="boldhead">Nominal investment return (% pa)</div>
-      <input id="nominal" type="range" min="0" max="12" step="0.1" value="5">
-      <div class="value"><span id="nominal_val">5.0</span>% <span style="color:var(--muted);font-weight:600;margin-left:8px">after tax:</span> <span id="nominal_after_tax" style="font-weight:700">3.75</span>%</div>
+  <div class="row" style="margin-top:8px;">
+    <div class="col control-box">
+      <div class="label-row">
+        <label data-tip="Annual percentage rate for the loan. If 'Compute monthly from Loan APR' is checked, monthly payments are calculated from this APR.">Loan APR (%)</label>
+        <span data-tip="APR used to compute monthly payment when selected.">0.00</span>
+      </div>
+      <input id="loan_apr" type="number" step="0.01" value="0.00" aria-label="Loan APR">
+      <div class="small" style="margin-top:6px">Set loan APR to see financing scenarios.</div>
+      <div class="toggle"><input id="use_loan_apr" type="checkbox"><label for="use_loan_apr" class="small">Compute monthly payment from Loan APR</label></div>
     </div>
-    <div class="col">
-      <div class="boldhead">Inflation (% pa)</div>
-      <input id="inflation" type="range" min="0" max="8" step="0.1" value="3">
-      <div class="value"><span id="inflation_val">3.0</span>%</div>
+    <div class="col control-box">
+      <div class="label-row">
+        <label data-tip="If checked, the balloon payment is included at the end; otherwise the balloon is set to zero (model returning the car).">Balloon option</label>
+        <span data-tip="Toggle to model paying or returning the car.">Pay</span>
+      </div>
+      <div class="toggle" style="margin-top:8px"><input id="pay_balloon" type="checkbox" checked><label for="pay_balloon" class="small">I'll pay the balloon at the end</label></div>
+      <div class="small" style="margin-top:6px">Uncheck to model returning the car at end of PCP (no balloon payment).</div>
     </div>
-    <div class="col">
-      <div class="boldhead">Tax rate on nominal returns</div>
-      <input id="tax" type="range" min="0" max="60" step="0.5" value="25">
-      <div class="value"><span id="tax_val">25.0</span>%</div>
-      <div class="small" style="margin-top:6px">Tax reduces the nominal investment return (used in balance growth).</div>
+    <div class="col control-box">
+      <label style="font-weight:400;color:var(--muted)">Misc</label>
+      <div class="small">Edit deal parameters above. Chart and exports update live.</div>
     </div>
   </div>
 
-  <div class="outputs" style="margin-top:12px">
+  <div class="outputs" style="margin-top:10px">
     <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate">—</div></div>
     <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv">—</div></div>
-    <div class="out"><div class="k">Final nominal balance (after 48 mo)</div><div class="v" id="final_bal">—</div></div>
+    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal">—</div></div>
     <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price">—</div></div>
     <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving">—</div></div>
     <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest">—</div></div>
+    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used">—</div></div>
+    <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount">—</div></div>
   </div>
 
-  <div class="grid-3" style="margin-top:12px">
-    <div class="card" style="padding:12px;text-align:center">
+  <div class="grid-3" style="margin-top:10px">
+    <div class="card" style="padding:10px;text-align:center">
       <canvas id="chart" width="520" height="300"></canvas>
       <div class="legend"><div style="width:10px;height:10px;background:#00d1b2;border-radius:2px"></div><div>Invested balance (nominal)</div></div>
     </div>
-    <div class="card" style="padding:12px">
+    <div class="card" style="padding:10px">
       <div class="small">Quick actions</div>
       <div style="height:8px"></div>
       <button id="copyBtn" class="btn-ghost">Copy key numbers to clipboard</button>
       <div id="copystatus" style="margin-top:8px"></div>
       <div style="height:12px"></div>
       <div class="small">Notes</div>
-      <div class="small" style="margin-top:6px">Effective price today = present value today of your own payments (net deposit + discounted monthly payments + discounted balloon). This is your economic cost in today's £.</div>
+      <div class="small" style="margin-top:6px">Effective price = PV of your payments (net deposit + discounted monthly payments + discounted balloon), using the configured real discount rate.</div>
     </div>
-    <div class="card" style="padding:12px">
+    <div class="card" style="padding:10px">
       <div class="small">Export</div>
       <div style="height:8px"></div>
-      <button id="exportCsvBtn2" class="btn-ghost">Export summary CSV (2dp)</button>
-      <button id="exportMonthlyCsvBtn2" class="btn-ghost" style="margin-top:8px">Export monthly CSV with interest (2dp)</button>
+      <button id="exportSummaryBtn" class="btn-ghost">Export summary CSV (2dp)</button>
+      <button id="exportMonthlyBtn" class="btn-ghost" style="margin-top:8px">Export monthly CSV with interest (2dp)</button>
       <div style="height:12px"></div>
-      <div class="small">CSV includes columns: month, start_balance, interest_earned, withdrawal, end_balance, cumulative_interest.</div>
+      <div class="small">Monthly CSV columns: month, start_balance, interest_earned, withdrawal, end_balance, cumulative_interest.</div>
     </div>
   </div>
 
-  <div class="footer small">Use the "Download HTML" button to save a copy of the current state. This file is fully offline.</div>
+  <div class="footer small">To host this page online, upload the HTML file to GitHub Pages or Netlify. Use "Download HTML" to save a snapshot.</div>
+</div>
+
+<!-- tooltip element (lower z-index than modalBackdrop) -->
+<div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<!-- help modal (moved after tooltip to ensure overlay) -->
+<div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <button class="close-x" id="modalClose" title="Close">✕</button>
+    <h2 id="helpTitle">Help & FAQ</h2>
+    <h3>What does this do?</h3>
+    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return after tax minus inflation).</p>
+    <h3>Tooltips</h3>
+    <p>Tap the ℹ️ icon, the label, or the numeric value next to a control to open a tooltip. The tooltip will remain open until you tap anywhere outside it. Press <kbd>Esc</kbd> to dismiss on keyboard.</p>
+    <h3>Loan APR vs monthly</h3>
+    <p>Check "Compute monthly payment from Loan APR" to auto-calc monthly payments using the APR, financed amount (price - customer deposit) and balloon.</p>
+    <h3>Balloon</h3>
+    <p>Uncheck "I'll pay the balloon" to model returning the car at the end of the PCP (balloon = £0).</p>
+    <h3>CSV export</h3>
+    <p>The monthly CSV includes interest earned each month and a cumulative interest column.</p>
+    <div style="margin-top:10px;text-align:right"><button id="modalClose2" class="btn">Close</button></div>
+  </div>
 </div>
 
 <script>
-function fmt(x){ return '£' + Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function num2(x){ return (Math.round(x*100)/100).toFixed(2); }
-function csvEscape(s){ if(typeof s === 'number') return s; return '"' + String(s).replace(/"/g,'""') + '"'; }
+// helpers
+const fmt = x => '£' + Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const num2 = x => (Math.round(x*100)/100).toFixed(2);
+const csvEscape = s => (typeof s === 'number'? s : '"' + String(s).replace(/"/g,'""') + '"');
 
-// Elements
+// element refs
+const tooltip = document.getElementById('tooltip');
+const helpBtn = document.getElementById('helpBtn');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalClose = document.getElementById('modalClose');
+const modalClose2 = document.getElementById('modalClose2');
+
 const nominal = document.getElementById('nominal'), inflation = document.getElementById('inflation'), tax = document.getElementById('tax');
 const nominal_val = document.getElementById('nominal_val'), inflation_val = document.getElementById('inflation_val'), tax_val = document.getElementById('tax_val');
 const nominal_after_tax = document.getElementById('nominal_after_tax');
+const tax_on_real_cb = document.getElementById('tax_on_real');
+const loan_apr_el = document.getElementById('loan_apr'), use_loan_apr_cb = document.getElementById('use_loan_apr');
+const pay_balloon_cb = document.getElementById('pay_balloon');
+
 const start_inv_el = document.getElementById('start_inv'), real_rate_el = document.getElementById('real_rate');
 const final_bal_el = document.getElementById('final_bal'), eff_price_el = document.getElementById('eff_price');
 const saving_el = document.getElementById('saving'), cum_interest_el = document.getElementById('cum_interest');
+const monthly_used_el = document.getElementById('monthly_used'), financed_amount_el = document.getElementById('financed_amount');
 
 const price = document.getElementById('price'), cust_dep = document.getElementById('cust_dep'), tesla_contrib = document.getElementById('tesla_contrib');
 const monthly = document.getElementById('monthly'), nmonthly = document.getElementById('nmonthly'), balloon = document.getElementById('balloon');
 
 const downloadBtn = document.getElementById('downloadBtn');
-const exportSummaryBtn = document.getElementById('exportCsvBtn2'), exportMonthlyBtn = document.getElementById('exportMonthlyCsvBtn2');
+const exportSummaryBtn = document.getElementById('exportSummaryBtn'), exportMonthlyBtn = document.getElementById('exportMonthlyBtn');
 const copyBtn = document.getElementById('copyBtn'), copystatus = document.getElementById('copystatus');
+const exportCsvBtn = document.getElementById('exportCsvBtn'), exportMonthlyCsvBtn = document.getElementById('exportMonthlyCsvBtn');
 
 const canvas = document.getElementById('chart'); const ctx = canvas.getContext('2d');
 
-function getState(){
-  const nom = parseFloat(nominal.value)/100;
-  const inf = parseFloat(inflation.value)/100;
-  const taxRate = parseFloat(tax.value)/100;
-  const after_tax_nom = nom * (1 - taxRate); // tax applies to nominal return
-  const P = parseFloat(price.value);
-  const cust = parseFloat(cust_dep.value);
-  const tcont = parseFloat(tesla_contrib.value);
-  const net_dep = cust - tcont;
-  const mpay = parseFloat(monthly.value);
-  const npay = parseInt(nmonthly.value);
-  const bal = parseFloat(balloon.value);
-  const start_invested = P - net_dep;
-  const real_annual = (1 + after_tax_nom) / (1 + inf) - 1;
-  const r_month_nom = Math.pow(1+after_tax_nom, 1/12) - 1;
-  const r_month_real = Math.pow(1+real_annual, 1/12) - 1;
+// tooltip behavior: consistent — no timers, visible until click outside. lower z-index than modal.
+let activeTipEl = null;
+function positionTooltipForEl(el){
+  const rect = el.getBoundingClientRect();
+  const width = tooltip.offsetWidth || 280;
+  let left = Math.min(window.innerWidth - width - 12, Math.max(8, rect.left + rect.width/2 - width/2));
+  let top = rect.top + rect.height + 12;
+  if(top + tooltip.offsetHeight + 12 > window.innerHeight){
+    top = rect.top - tooltip.offsetHeight - 12;
+  }
+  if(top < 8) top = 8;
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
 
-  // simulate month-by-month with interest earned and cumulative interest
-  let balances = []; let interest_earned_arr = []; let cumulative_interest = 0;
-  let b = start_invested; balances.push(b); interest_earned_arr.push(0);
+function showTooltipForElement(el){
+  if(!el) return;
+  const tip = el.getAttribute('data-tip');
+  if(!tip) return;
+  if(activeTipEl && activeTipEl !== el){
+    const containerPrev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
+    if(containerPrev) containerPrev.classList.remove('active-tip');
+  }
+  activeTipEl = el;
+  tooltip.textContent = tip;
+  tooltip.classList.add('visible');
+  tooltip.setAttribute('aria-hidden','false');
+  const container = el.closest('.col') || el.closest('label') || el;
+  if(container) container.classList.add('active-tip');
+  requestAnimationFrame(()=> positionTooltipForEl(el));
+  document.addEventListener('keydown', escHandler);
+}
+
+function hideTooltip(){
+  if(!tooltip.classList.contains('visible')) return;
+  tooltip.classList.remove('visible');
+  tooltip.setAttribute('aria-hidden','true');
+  if(activeTipEl){
+    const container = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
+    if(container) container.classList.remove('active-tip');
+    activeTipEl = null;
+  }
+  document.removeEventListener('keydown', escHandler);
+}
+
+function escHandler(e){
+  if(e.key === 'Escape' || e.key === 'Esc') hideTooltip();
+}
+
+// attach tooltip to data-tip elements (labels, values, icons)
+document.querySelectorAll('[data-tip]').forEach(el=>{
+  el.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    if(activeTipEl === el) return;
+    showTooltipForElement(el);
+  });
+  // hover devices show on hover too
+  if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
+    el.addEventListener('mouseenter', ()=> showTooltipForElement(el));
+    el.addEventListener('mouseleave', ()=> hideTooltip());
+  }
+});
+
+// hide tooltip when clicking outside (but modal should still appear on top)
+document.addEventListener('click', (e)=>{
+  if(e.target.closest('[data-tip]')) return;
+  if(e.target.closest('#tooltip')) return;
+  hideTooltip();
+});
+
+// modal behavior: ensure it overlays properly on mobile
+helpBtn.addEventListener('click', ()=>{ modalBackdrop.style.display='flex'; modalBackdrop.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden'; });
+modalClose.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
+modalClose2.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
+modalBackdrop.addEventListener('click',(e)=>{ if(e.target === modalBackdrop){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; } });
+
+// Financial functions & UI bindings (same as v6)
+function computeMonthlyFromAPR(financed, apr_annual, n, balloon_val){
+  if(n <= 0) return 0;
+  const r = Math.pow(1 + apr_annual, 1/12) - 1;
+  const discounted_balloon = balloon_val / Math.pow(1 + r, n);
+  const numerator = (financed - discounted_balloon) * r;
+  const denom = 1 - Math.pow(1 + r, -n);
+  if(Math.abs(denom) < 1e-12) return 0;
+  return numerator / denom;
+}
+
+function getState(){
+  const nom = parseFloat(nominal.value)/100 || 0;
+  const inf = parseFloat(inflation.value)/100 || 0;
+  const taxRate = parseFloat(tax.value)/100 || 0;
+  const tax_on_real = tax_on_real_cb.checked;
+  const loan_apr = parseFloat(loan_apr_el.value)/100 || 0;
+  const use_loan_apr = use_loan_apr_cb.checked;
+  const pay_balloon = pay_balloon_cb.checked;
+
+  const P = parseFloat(price.value) || 0;
+  const cust = parseFloat(cust_dep.value) || 0;
+  const tcont = parseFloat(tesla_contrib.value) || 0;
+  const customer_deposit = cust;
+  const net_dep = cust - tcont;
+  const mpay_input = parseFloat(monthly.value) || 0;
+  const npay = parseInt(nmonthly.value) || 0;
+  const balloon_input = parseFloat(balloon.value) || 0;
+  const balloon_val = pay_balloon ? balloon_input : 0;
+
+  const start_invested = P - net_dep;
+  const financed_amount = P - customer_deposit;
+
+  let after_tax_nom, real_before_tax, after_tax_real, real_annual;
+  if(!tax_on_real){
+    after_tax_nom = nom * (1 - taxRate);
+    real_annual = (1 + after_tax_nom) / (1 + inf) - 1;
+  } else {
+    real_before_tax = (1 + nom) / (1 + inf) - 1;
+    after_tax_real = real_before_tax * (1 - taxRate);
+    real_annual = after_tax_real;
+    after_tax_nom = Math.pow((1 + after_tax_real) * (1 + inf), 1) - 1;
+  }
+
+  let r_month_nom;
+  if(!tax_on_real){
+    r_month_nom = Math.pow(1 + after_tax_nom, 1/12) - 1;
+  } else {
+    const after_tax_real = real_annual;
+    r_month_nom = Math.pow((1 + after_tax_real) * (1 + inf), 1/12) - 1;
+  }
+  const r_month_real = Math.pow(1 + real_annual, 1/12) - 1;
+
+  let monthly_used = mpay_input;
+  if(use_loan_apr){
+    monthly_used = computeMonthlyFromAPR(financed_amount, loan_apr, npay, balloon_val);
+  }
+
+  // simulate balances and interest
+  let balances = [], interest_arr = [], cum_interest = 0;
+  let b = start_invested;
+  balances.push(b); interest_arr.push(0);
   for(let m=1;m<=npay+1;m++){
     const before = b;
     b = b * (1 + r_month_nom);
     const interest_earned = b - before;
-    cumulative_interest += interest_earned;
+    cum_interest += interest_earned;
     let withdrawal = 0;
-    if(m <= npay){ withdrawal = mpay; b -= mpay; } else { withdrawal = bal; b -= bal; }
+    if(m <= npay){ withdrawal = monthly_used; b -= monthly_used; } else { withdrawal = balloon_val; b -= balloon_val; }
     balances.push(b);
-    interest_earned_arr.push(interest_earned);
+    interest_arr.push(interest_earned);
   }
 
-  // PV of outflows using real monthly rate (discount)
   let pv_monthly = 0;
   for(let k=1;k<=npay;k++){
-    pv_monthly += mpay / Math.pow(1 + r_month_real, k);
+    pv_monthly += monthly_used / Math.pow(1 + r_month_real, k);
   }
-  const pv_balloon = bal / Math.pow(1 + r_month_real, npay+1);
+  const pv_balloon = balloon_val / Math.pow(1 + r_month_real, npay+1);
   const pv_total = net_dep + pv_monthly + pv_balloon;
   const saving = P - pv_total;
+  const final_nominal = balances[balances.length-1];
 
   return {
-    nom, inf, taxRate, after_tax_nom, P, cust, tcont, net_dep, mpay, npay, bal,
-    start_invested, real_annual, r_month_nom, r_month_real, balances, interest_earned_arr, cumulative_interest, pv_total, saving
+    nom, inf, taxRate, tax_on_real, loan_apr, use_loan_apr, pay_balloon,
+    P, cust, tcont, customer_deposit, net_dep, financed_amount,
+    mpay_input, monthly_used, npay, balloon_input, ball: balloon_val,
+    start_invested, real_annual, r_month_nom, r_month_real, balances, interest_arr, cumulative_interest: cum_interest, pv_total, saving, after_tax_nom, final_nominal
   };
 }
 
 function refresh(){
   const s = getState();
-  // update slider displays and after-tax display (values bolded)
   nominal_val.textContent = (s.nom*100).toFixed(1);
   inflation_val.textContent = (s.inf*100).toFixed(1);
   tax_val.textContent = (s.taxRate*100).toFixed(1);
   nominal_after_tax.textContent = (s.after_tax_nom*100).toFixed(2);
 
-  // outputs
   start_inv_el.textContent = fmt(s.start_invested);
-  final_bal_el.textContent = fmt(s.balances[s.balances.length-1]);
+  final_bal_el.textContent = fmt(s.final_nominal);
   eff_price_el.textContent = fmt(s.pv_total);
   saving_el.textContent = fmt(s.saving);
   cum_interest_el.textContent = fmt(s.cumulative_interest);
   real_rate_el.textContent = (s.real_annual*100).toFixed(4) + '%';
+  monthly_used_el.textContent = fmt(s.monthly_used);
+  financed_amount_el.textContent = fmt(s.financed_amount);
 
   drawChart(s.balances);
 
   return s;
 }
 
-// Chart drawing
+// chart (unchanged)
 function drawChart(data){
-  const W = canvas.width = Math.min(860, Math.max(360, document.body.clientWidth * 0.55));
-  const H = canvas.height = 300;
+  const W = canvas.width = Math.min(960, Math.max(360, document.body.clientWidth * 0.65));
+  const H = canvas.height = 320;
   ctx.clearRect(0,0,W,H);
-  const m = {l:52,r:16,t:22,b:40};
+  const m = {l:56,r:20,t:24,b:44};
   const innerW = W - m.l - m.r, innerH = H - m.t - m.b;
   const maxVal = Math.max(...data), minVal = Math.min(...data);
   const pad = Math.max(200, (maxVal - minVal) * 0.06);
   const yMax = maxVal + pad, yMin = Math.max(0, minVal - pad);
 
-  // bg
   ctx.fillStyle = 'rgba(255,255,255,0.02)'; ctx.fillRect(0,0,W,H);
 
-  // grid
   ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
   for(let i=0;i<=4;i++){
     const y = m.t + i*(innerH/4);
     ctx.beginPath(); ctx.moveTo(m.l,y); ctx.lineTo(W-m.r,y); ctx.stroke();
   }
 
-  // axes
   ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath();
   ctx.moveTo(m.l,m.t); ctx.lineTo(m.l,H-m.b); ctx.moveTo(m.l,H-m.b); ctx.lineTo(W-m.r,H-m.b); ctx.stroke();
 
-  // y labels
   ctx.fillStyle = '#9aa4b2'; ctx.font = '12px system-ui, Arial';
   for(let i=0;i<=4;i++){
     const y = m.t + i*(innerH/4);
     const val = Math.round(yMax - i*((yMax-yMin)/4));
-    ctx.fillText('£' + val.toLocaleString(), 6, y+4);
+    ctx.fillText('£' + val.toLocaleString(), 8, y+4);
   }
 
-  // x ticks
   const N = data.length;
   const step = Math.max(1, Math.round(N/8));
   ctx.textAlign = 'center'; ctx.fillStyle = '#9aa4b2';
@@ -247,50 +473,50 @@ function drawChart(data){
     ctx.fillText(String(i), x, H-12);
   }
 
-  // path
   ctx.beginPath();
   for(let i=0;i<N;i++){
     const x = m.l + (i/(N-1))*innerW;
     const y = m.t + (1 - (data[i]-yMin)/(yMax-yMin))*innerH;
     if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
-  ctx.strokeStyle = '#00d1b2'; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.strokeStyle = '#00d1b2'; ctx.lineWidth = 2.6; ctx.stroke();
 
-  // fill
   ctx.lineTo(m.l+innerW, H-m.b); ctx.lineTo(m.l, H-m.b); ctx.closePath();
   ctx.fillStyle = 'rgba(0,209,178,0.08)'; ctx.fill();
 
-  // last point
   const lastX = m.l + innerW;
   const lastY = m.t + (1 - (data[N-1]-yMin)/(yMax-yMin))*innerH;
   ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(lastX,lastY,4,0,Math.PI*2); ctx.fill();
-  ctx.font = '12px system-ui, Arial'; ctx.fillText('£' + Math.round(data[N-1]).toLocaleString(), lastX-60, lastY-10);
+  ctx.font = '12px system-ui, Arial'; ctx.fillText('£' + Math.round(data[N-1]).toLocaleString(), lastX-68, lastY-10);
 }
 
-// CSV export enhanced with interest columns and rounding to 2dp
+// exports and copy unchanged
 function exportSummaryCSV(state){
   const rows = [
     ['Parameter','Value'],
-    ['On-the-road price', parseFloat(state.P).toFixed(2)],
+    ['Price', parseFloat(state.P).toFixed(2)],
     ['Customer deposit', parseFloat(state.cust).toFixed(2)],
-    ['Tesla contribution', parseFloat(state.tcont).toFixed(2)],
-    ['Net deposit', parseFloat(state.net_dep).toFixed(2)],
-    ['Monthly payment', parseFloat(state.mpay).toFixed(2)],
-    ['Number monthly payments', state.npay],
-    ['Balloon', parseFloat(state.bal).toFixed(2)],
+    ['Dealer contribution', parseFloat(state.tcont).toFixed(2)],
+    ['Net deposit (you pay)', parseFloat(state.net_dep).toFixed(2)],
+    ['Financed amount (price - customer deposit)', parseFloat(state.financed_amount).toFixed(2)],
+    ['Monthly payment used', parseFloat(state.monthly_used).toFixed(2)],
+    ['Monthly payments (count)', state.npay],
+    ['Balloon (paid at end?)', parseFloat(state.ball).toFixed(2)],
+    ['Loan APR (%)', (state.loan_apr*100).toFixed(2)],
+    ['Use loan APR to compute payments', state.use_loan_apr],
     ['Nominal return (annual %)', (state.nom*100).toFixed(2)],
+    ['Tax on real returns?', state.tax_on_real],
     ['Tax rate (%)', (state.taxRate*100).toFixed(2)],
-    ['Nominal after tax (%)', (state.after_tax_nom*100).toFixed(2)],
     ['Inflation (annual %)', (state.inf*100).toFixed(2)],
-    ['Real annual rate (%)', (state.real_annual*100).toFixed(4)],
+    ['Real discount rate (annual %)', (state.real_annual*100).toFixed(4)],
     ['Start invested (nominal)', parseFloat(state.start_invested).toFixed(2)],
     ['Final nominal leftover', parseFloat(state.final_nominal).toFixed(2)],
-    ['Effective price today', parseFloat(state.pv_total).toFixed(2)],
+    ['Effective price today (PV)', parseFloat(state.pv_total).toFixed(2)],
     ['Saving vs paying cash today', parseFloat(state.saving).toFixed(2)],
     ['Cumulative interest earned (nominal)', parseFloat(state.cumulative_interest).toFixed(2)]
   ];
   let csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
-  triggerDownload(csv, 'tesla_pcp_summary_v6.csv', 'text/csv');
+  triggerDownload(csv, 'pcp_playground_summary_v7.csv', 'text/csv');
 }
 
 function exportMonthlyCSV(state){
@@ -299,15 +525,14 @@ function exportMonthlyCSV(state){
   let cum = 0;
   for(let i=0;i<state.balances.length-1;i++){
     const start = state.balances[i];
-    const interest = state.interest_earned_arr[i+1]; // interest earned in month i+1
+    const interest = state.interest_arr[i+1];
     cum += interest;
-    // determine withdrawal: months 1..npay => monthly payment, last month => balloon
     let withdrawal = 0;
-    if(i+1 <= state.npay) withdrawal = state.mpay; else withdrawal = state.bal;
+    if(i+1 <= state.npay) withdrawal = state.monthly_used; else withdrawal = state.ball;
     lines.push([i, (Math.round(start*100)/100).toFixed(2), (Math.round(interest*100)/100).toFixed(2), (Math.round(withdrawal*100)/100).toFixed(2), (Math.round(state.balances[i+1]*100)/100).toFixed(2), (Math.round(cum*100)/100).toFixed(2)].join(','));
   }
   const csv = lines.join('\n');
-  triggerDownload(csv, 'tesla_pcp_monthly_v6.csv', 'text/csv');
+  triggerDownload(csv, 'pcp_playground_monthly_v7.csv', 'text/csv');
 }
 
 function triggerDownload(content, filename, mime){
@@ -317,79 +542,56 @@ function triggerDownload(content, filename, mime){
   a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
-// Copy to clipboard (rounded)
 function copySummaryToClipboard(state){
   const lines = [
-    `Tesla PCP — Summary`,
+    `PCP & Financing Playground — Summary`,
     `Price: £${parseFloat(state.P).toFixed(2)}`,
     `Customer deposit: £${parseFloat(state.cust).toFixed(2)}`,
-    `Tesla contribution: £${parseFloat(state.tcont).toFixed(2)}`,
-    `Net deposit: £${parseFloat(state.net_dep).toFixed(2)}`,
-    `Monthly payment: £${parseFloat(state.mpay).toFixed(2)}`,
+    `Dealer contribution: £${parseFloat(state.tcont).toFixed(2)}`,
+    `Net deposit (you): £${parseFloat(state.net_dep).toFixed(2)}`,
+    `Financed amount: £${parseFloat(state.financed_amount).toFixed(2)}`,
+    `Monthly payment used: £${parseFloat(state.monthly_used).toFixed(2)}`,
     `Months: ${state.npay}`,
-    `Balloon: £${parseFloat(state.bal).toFixed(2)}`,
+    `Balloon (paid): £${parseFloat(state.ball).toFixed(2)}`,
+    `Loan APR: ${(state.loan_apr*100).toFixed(2)}%`,
+    `Use loan APR: ${state.use_loan_apr}`,
     `Nominal return: ${(state.nom*100).toFixed(2)}%`,
+    `Tax on real returns? ${state.tax_on_real}`,
     `Tax rate: ${(state.taxRate*100).toFixed(2)}%`,
-    `Nominal after tax: ${(state.after_tax_nom*100).toFixed(2)}%`,
     `Inflation: ${(state.inf*100).toFixed(2)}%`,
-    `Real annual: ${(state.real_annual*100).toFixed(4)}%`,
+    `Real discount rate: ${(state.real_annual*100).toFixed(4)}%`,
     `Start invested: £${parseFloat(state.start_invested).toFixed(2)}`,
     `Final nominal leftover: £${parseFloat(state.final_nominal).toFixed(2)}`,
-    `Effective price today: £${parseFloat(state.pv_total).toFixed(2)}`,
+    `Effective price today (PV): £${parseFloat(state.pv_total).toFixed(2)}`,
     `Saving vs cash: £${parseFloat(state.saving).toFixed(2)}`,
-    `Cumulative interest earned (nominal): £${parseFloat(state.cumulative_interest).toFixed(2)}`
+    `Cumulative interest earned: £${parseFloat(state.cumulative_interest).toFixed(2)}`
   ].join('\n');
   navigator.clipboard.writeText(lines).then(()=>{
     copystatus.textContent = 'Copied ✓'; copystatus.className = 'copyok';
     setTimeout(()=>{copystatus.textContent=''; copystatus.className='';},1800);
-  }, ()=>{
-    copystatus.textContent = 'Copy failed (try downloading CSV)';
-  });
+  }, ()=>{ copystatus.textContent = 'Copy failed'; });
 }
 
-// Wire up events
-const inputs = [nominal, inflation, tax, price, cust_dep, tesla_contrib, monthly, nmonthly, balloon];
-inputs.forEach(i=>i.addEventListener('input', refresh));
+// wire up UI events
+const uiInputs = [nominal, inflation, tax, tax_on_real_cb, loan_apr_el, use_loan_apr_cb, pay_balloon_cb, price, cust_dep, tesla_contrib, monthly, nmonthly, balloon];
+uiInputs.forEach(i=>i.addEventListener('input', refresh));
 
-document.getElementById('downloadBtn').addEventListener('click', ()=>{
-  const htmlContent = '<!doctype html>\n' + document.documentElement.outerHTML;
+downloadBtn.addEventListener('click', ()=>{
+  const htmlContent = '<!doctype html>\\n' + document.documentElement.outerHTML;
   const blob = new Blob([htmlContent], {type: 'text/html'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'tesla_pcp_calculator_offline_v6.html'; document.body.appendChild(a);
+  const a = document.createElement('a'); a.href = url; a.download = 'pcp_financing_playground_v7.html'; document.body.appendChild(a);
   a.click(); a.remove(); URL.revokeObjectURL(url);
 });
 
-document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
-  const s = getState();
-  exportSummaryCSV({
-    P: s.P, cust: s.cust, tcont: s.tcont, net_dep: s.net_dep, mpay: s.mpay, npay: s.npay, bal: s.bal,
-    nom: s.nom, inf: s.inf, taxRate: s.taxRate, after_tax_nom: s.after_tax_nom, real_annual: s.real_annual, start_invested: s.start_invested, final_nominal: s.balances[s.balances.length-1], pv_total: s.pv_total, saving: s.saving, cumulative_interest: s.cumulative_interest
-  });
-});
-
-document.getElementById('exportMonthlyCsvBtn').addEventListener('click', ()=>{
-  const s = getState();
-  exportMonthlyCSV({balances: s.balances, interest_earned_arr: s.interest_earned_arr, npay: s.npay, mpay: s.mpay, bal: s.bal});
-});
-
-document.getElementById('exportCsvBtn2').addEventListener('click', ()=>{
-  const s = getState();
-  exportSummaryCSV({
-    P: s.P, cust: s.cust, tcont: s.tcont, net_dep: s.net_dep, mpay: s.mpay, npay: s.npay, bal: s.bal,
-    nom: s.nom, inf: s.inf, taxRate: s.taxRate, after_tax_nom: s.after_tax_nom, real_annual: s.real_annual, start_invested: s.start_invested, final_nominal: s.balances[s.balances.length-1], pv_total: s.pv_total, saving: s.saving, cumulative_interest: s.cumulative_interest
-  });
-});
-
-document.getElementById('exportMonthlyCsvBtn2').addEventListener('click', ()=>{
-  const s = getState();
-  exportMonthlyCSV({balances: s.balances, interest_earned_arr: s.interest_earned_arr, npay: s.npay, mpay: s.mpay, bal: s.bal});
-});
-
+document.getElementById('exportCsvBtn').addEventListener('click', ()=>{ const s = getState(); exportSummaryCSV(s); });
+document.getElementById('exportMonthlyCsvBtn').addEventListener('click', ()=>{ const s = getState(); exportMonthlyCSV(s); });
+document.getElementById('exportSummaryBtn').addEventListener('click', ()=>{ const s = getState(); exportSummaryCSV(s); });
+document.getElementById('exportMonthlyBtn').addEventListener('click', ()=>{ const s = getState(); exportMonthlyCSV(s); });
 document.getElementById('copyBtn').addEventListener('click', ()=>{ const s = getState(); copySummaryToClipboard(s); });
 
 // initial render
 refresh();
-
 </script>
 </body>
 </html>
