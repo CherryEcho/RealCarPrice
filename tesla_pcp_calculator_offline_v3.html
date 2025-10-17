@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tesla PCP Calculator — Offline (v3)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#0f1724;--card:#071122;--muted:#9aa4b2;--accent:#00d1b2;--glass:rgba(255,255,255,0.03);color-scheme:dark}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6}
+.container{max-width:1000px;margin:22px auto;padding:20px}
+.header{display:flex;align-items:center;gap:14px;justify-content:space-between}
+h1{margin:0;font-size:18px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.col{flex:1 1 280px;min-width:220px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input[type=range]{width:100%}
+.value{font-size:16px;font-weight:700;color:#fff;margin-top:6px}
+.outputs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.out{background:var(--glass);padding:12px;border-radius:8px}
+.out .k{font-size:12px;color:var(--muted)} .out .v{font-size:16px;font-weight:700}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.controls input[type=number], select{background:rgba(255,255,255,0.02);border:none;color:#fff;padding:8px;border-radius:8px;width:100%}
+.small{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:8px;align-items:center;margin-top:12px}
+.btn{background:var(--accent);color:#052026;padding:8px 12px;border-radius:10px;font-weight:700;border:none;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+canvas{display:block;margin:12px auto;border-radius:8px;background:transparent}
+.footer{margin-top:12px;color:var(--muted);font-size:13px}
+.inline{display:flex;gap:8px;align-items:center}
+.legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.copyok{color:#8de2c6;font-weight:700}
+@media(max-width:840px){.outputs{grid-template-columns:1fr} .grid-3{grid-template-columns:1fr} .header{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="container card">
+  <div class="header">
+    <div>
+      <h1>Tesla PCP — Real Cost & Investment Playground (Offline)</h1>
+      <div class="small">Adjust returns and inflation independently. Export results or month-by-month CSV.</div>
+    </div>
+    <div class="inline">
+      <button id="downloadBtn" class="btn">Download HTML</button>
+      <button id="exportCsvBtn" class="btn-ghost">Export summary CSV</button>
+      <button id="exportMonthlyCsvBtn" class="btn-ghost">Export monthly CSV</button>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:14px;">
+    <div class="col">
+      <label>Nominal investment return (% pa)</label>
+      <input id="nominal" type="range" min="0" max="12" step="0.1" value="5">
+      <div class="value"><span id="nominal_val">5.0</span>%</div>
+    </div>
+    <div class="col">
+      <label>Inflation (% pa)</label>
+      <input id="inflation" type="range" min="0" max="8" step="0.1" value="3">
+      <div class="value"><span id="inflation_val">3.0</span>%</div>
+    </div>
+    <div class="col">
+      <label>Compounding</label>
+      <select id="compounding">
+        <option value="12">Monthly compounding</option>
+        <option value="1">Yearly compounding</option>
+      </select>
+      <div class="small" style="margin-top:6px">Monthly compounding recommended</div>
+    </div>
+  </div>
+
+  <div class="outputs">
+    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate">—</div></div>
+    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv">—</div></div>
+    <div class="out"><div class="k">Final nominal balance (after 48 mo)</div><div class="v" id="final_bal">—</div></div>
+    <div class="out"><div class="k">PV of your outflows (today)</div><div class="v" id="pv_out">—</div></div>
+    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price">—</div></div>
+    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving">—</div></div>
+  </div>
+
+  <div class="grid-3 controls" style="margin-top:12px">
+    <div class="card">
+      <div class="small">Deal parameters (editable)</div>
+      <label>On-the-road price (£)</label><input id="price" type="number" value="39990">
+      <label style="margin-top:8px">Customer deposit (£)</label><input id="cust_dep" type="number" value="8600">
+      <label style="margin-top:8px">Tesla deposit contribution (£)</label><input id="tesla_contrib" type="number" value="3000">
+      <label style="margin-top:8px">Monthly payment (£)</label><input id="monthly" type="number" value="299">
+      <label style="margin-top:8px">Monthly payments (count)</label><input id="nmonthly" type="number" value="47">
+      <label style="margin-top:8px">Optional final payment (balloon)</label><input id="balloon" type="number" value="17334">
+    </div>
+
+    <div class="card" style="text-align:center">
+      <canvas id="chart" width="520" height="300"></canvas>
+      <div class="legend"><div style="width:10px;height:10px;background:#00d1b2;border-radius:2px"></div><div>Invested balance (nominal)</div></div>
+    </div>
+
+    <div class="card">
+      <div class="small">Quick actions</div>
+      <div style="height:8px"></div>
+      <button id="copyBtn" class="btn-ghost">Copy key numbers to clipboard</button>
+      <div id="copystatus" style="margin-top:8px"></div>
+      <div style="height:12px"></div>
+      <div class="small">Notes</div>
+      <div class="small" style="margin-top:6px">PV uses the <em>real</em> discount rate = (1+nom)/(1+inf)-1 and discounts monthly. Effective price = PV of your outflows (net deposit + payments + balloon).</div>
+    </div>
+  </div>
+
+  <div class="footer small">This tool works fully offline. Use the "Download HTML" button to save a copy of the calculator (current state will be embedded).</div>
+</div>
+
+<script>
+// Formatting helper
+function fmt(x){ return '£' + Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function num2(x){ return (Math.round(x*100)/100).toFixed(2); }
+function csvEscape(s){ if(typeof s === 'number') return s; return '"' + String(s).replace(/"/g,'""') + '"'; }
+
+// Elements
+const nominal = document.getElementById('nominal'), inflation = document.getElementById('inflation');
+const nominal_val = document.getElementById('nominal_val'), inflation_val = document.getElementById('inflation_val');
+const comp = document.getElementById('compounding');
+const start_inv_el = document.getElementById('start_inv'), real_rate_el = document.getElementById('real_rate');
+const final_bal_el = document.getElementById('final_bal'), pv_out_el = document.getElementById('pv_out');
+const eff_price_el = document.getElementById('eff_price'), saving_el = document.getElementById('saving');
+
+const price = document.getElementById('price'), cust_dep = document.getElementById('cust_dep'), tesla_contrib = document.getElementById('tesla_contrib');
+const monthly = document.getElementById('monthly'), nmonthly = document.getElementById('nmonthly'), balloon = document.getElementById('balloon');
+
+const downloadBtn = document.getElementById('downloadBtn'), exportCsvBtn = document.getElementById('exportCsvBtn'), exportMonthlyCsvBtn = document.getElementById('exportMonthlyCsvBtn');
+const copyBtn = document.getElementById('copyBtn'), copystatus = document.getElementById('copystatus');
+
+const canvas = document.getElementById('chart'); const ctx = canvas.getContext('2d');
+
+function computeAll(){
+  const nom = parseFloat(nominal.value)/100;
+  const inf = parseFloat(inflation.value)/100;
+  nominal_val.textContent = (nom*100).toFixed(1);
+  inflation_val.textContent = (inf*100).toFixed(1);
+  const freq = parseInt(comp.value);
+
+  const P = parseFloat(price.value);
+  const cust = parseFloat(cust_dep.value);
+  const tcont = parseFloat(tesla_contrib.value);
+  const net_dep = cust - tcont;
+  const mpay = parseFloat(monthly.value);
+  const npay = parseInt(nmonthly.value);
+  const bal = parseFloat(balloon.value);
+
+  const start_invested = P - net_dep;
+
+  // real annual rate
+  const real_annual = (1+nom)/(1+inf) - 1;
+  real_rate_el.textContent = (real_annual*100).toFixed(3) + '%';
+
+  // monthly rates
+  const r_month_nom = Math.pow(1+nom, 1/12) - 1;
+  const r_month_real = Math.pow(1+real_annual, 1/12) - 1;
+
+  // simulate nominal balances
+  let balances = []; let b = start_invested; balances.push(b);
+  for(let m=1;m<=npay+1;m++){
+    b = b * (1 + r_month_nom);
+    if(m <= npay) b -= mpay; else b -= bal;
+    balances.push(b);
+  }
+
+  // PV of outflows using real monthly
+  let pv_monthly = 0;
+  for(let k=1;k<=npay;k++){
+    pv_monthly += mpay / Math.pow(1 + r_month_real, k);
+  }
+  const pv_balloon = bal / Math.pow(1 + r_month_real, npay+1);
+  const pv_total = net_dep + pv_monthly + pv_balloon;
+
+  // outputs
+  start_inv_el.textContent = fmt(start_invested);
+  final_bal_el.textContent = fmt(balances[balances.length-1]);
+  pv_out_el.textContent = fmt(pv_total);
+  eff_price_el.textContent = fmt(pv_total);
+  saving_el.textContent = fmt(parseFloat((P - pv_total).toFixed(2)));
+
+  drawChart(balances);
+
+  return {balances, start_invested, pv_total, real_annual, P, cust, tcont, net_dep, mpay, npay, bal};
+}
+
+// Simple chart drawing (lightweight, offline)
+function drawChart(data){
+  const W = canvas.width = Math.min(760, Math.max(360, document.body.clientWidth * 0.45));
+  const H = canvas.height = 300;
+  ctx.clearRect(0,0,W,H);
+  const m = {l:52,r:16,t:22,b:40};
+  const innerW = W - m.l - m.r, innerH = H - m.t - m.b;
+  const maxVal = Math.max(...data), minVal = Math.min(...data);
+  const pad = Math.max(200, (maxVal - minVal) * 0.06);
+  const yMax = maxVal + pad, yMin = Math.max(0, minVal - pad);
+
+  // bg
+  ctx.fillStyle = 'rgba(255,255,255,0.02)'; ctx.fillRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for(let i=0;i<=4;i++){
+    const y = m.t + i*(innerH/4);
+    ctx.beginPath(); ctx.moveTo(m.l,y); ctx.lineTo(W-m.r,y); ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath();
+  ctx.moveTo(m.l,m.t); ctx.lineTo(m.l,H-m.b); ctx.moveTo(m.l,H-m.b); ctx.lineTo(W-m.r,H-m.b); ctx.stroke();
+
+  // y labels
+  ctx.fillStyle = '#9aa4b2'; ctx.font = '12px system-ui, Arial';
+  for(let i=0;i<=4;i++){
+    const y = m.t + i*(innerH/4);
+    const val = Math.round(yMax - i*((yMax-yMin)/4));
+    ctx.fillText('£' + val.toLocaleString(), 6, y+4);
+  }
+
+  // x ticks
+  const N = data.length;
+  const step = Math.max(1, Math.round(N/8));
+  ctx.textAlign = 'center'; ctx.fillStyle = '#9aa4b2';
+  for(let i=0;i<N;i+=step){
+    const x = m.l + (i/(N-1))*innerW;
+    ctx.fillText(String(i), x, H-12);
+  }
+
+  // path
+  ctx.beginPath();
+  for(let i=0;i<N;i++){
+    const x = m.l + (i/(N-1))*innerW;
+    const y = m.t + (1 - (data[i]-yMin)/(yMax-yMin))*innerH;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#00d1b2'; ctx.lineWidth = 2.2; ctx.stroke();
+
+  // fill
+  ctx.lineTo(m.l+innerW, H-m.b); ctx.lineTo(m.l, H-m.b); ctx.closePath();
+  ctx.fillStyle = 'rgba(0,209,178,0.08)'; ctx.fill();
+
+  // last point
+  const lastX = m.l + innerW;
+  const lastY = m.t + (1 - (data[N-1]-yMin)/(yMax-yMin))*innerH;
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(lastX,lastY,4,0,Math.PI*2); ctx.fill();
+  ctx.font = '12px system-ui, Arial'; ctx.fillText('£' + Math.round(data[N-1]).toLocaleString(), lastX-60, lastY-10);
+}
+
+// CSV export functions (rounded to 2 dp)
+function exportSummaryCSV(state){
+  const rows = [
+    ['Parameter','Value'],
+    ['On-the-road price', parseFloat(state.P).toFixed(2)],
+    ['Customer deposit', parseFloat(state.cust).toFixed(2)],
+    ['Tesla contribution', parseFloat(state.tcont).toFixed(2)],
+    ['Net deposit', parseFloat(state.net_dep).toFixed(2)],
+    ['Monthly payment', parseFloat(state.mpay).toFixed(2)],
+    ['Number monthly payments', state.npay],
+    ['Balloon', parseFloat(state.bal).toFixed(2)],
+    ['Nominal return (annual %)', (state.nom*100).toFixed(2)],
+    ['Inflation (annual %)', (state.inf*100).toFixed(2)],
+    ['Real annual rate (%)', (state.real_annual*100).toFixed(4)],
+    ['Start invested (nominal)', parseFloat(state.start_invested).toFixed(2)],
+    ['Final nominal leftover', parseFloat(state.final_nominal).toFixed(2)],
+    ['PV of outflows (today)', parseFloat(state.pv_total).toFixed(2)],
+    ['Effective price today', parseFloat(state.pv_total).toFixed(2)],
+    ['Saving vs paying cash today', parseFloat(state.saving).toFixed(2)]
+  ];
+  let csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  triggerDownload(csv, 'tesla_pcp_summary_v3.csv', 'text/csv');
+}
+
+function exportMonthlyCSV(state){
+  const header = ['month','balance'];
+  const lines = [header.join(',')];
+  state.balances.forEach((b,i)=>{
+    lines.push([i, (Math.round(b*100)/100).toFixed(2)].join(','));
+  });
+  const csv = lines.join('\n');
+  triggerDownload(csv, 'tesla_pcp_monthly_balances_v3.csv', 'text/csv');
+}
+
+function triggerDownload(content, filename, mime){
+  const blob = new Blob([content],{type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+// Copy to clipboard (rounded outputs)
+function copySummaryToClipboard(state){
+  const lines = [
+    `Tesla PCP — Summary`,
+    `Price: £${parseFloat(state.P).toFixed(2)}`,
+    `Customer deposit: £${parseFloat(state.cust).toFixed(2)}`,
+    `Tesla contribution: £${parseFloat(state.tcont).toFixed(2)}`,
+    `Net deposit: £${parseFloat(state.net_dep).toFixed(2)}`,
+    `Monthly payment: £${parseFloat(state.mpay).toFixed(2)}`,
+    `Months: ${state.npay}`,
+    `Balloon: £${parseFloat(state.bal).toFixed(2)}`,
+    `Nominal return: ${(state.nom*100).toFixed(2)}%`,
+    `Inflation: ${(state.inf*100).toFixed(2)}%`,
+    `Real annual: ${(state.real_annual*100).toFixed(4)}%`,
+    `Start invested: £${parseFloat(state.start_invested).toFixed(2)}`,
+    `Final nominal leftover: £${parseFloat(state.final_nominal).toFixed(2)}`,
+    `PV of outflows: £${parseFloat(state.pv_total).toFixed(2)}`,
+    `Saving vs cash: £${parseFloat(state.saving).toFixed(2)}`
+  ].join('\n');
+  navigator.clipboard.writeText(lines).then(()=>{
+    copystatus.textContent = 'Copied ✓'; copystatus.className = 'copyok';
+    setTimeout(()=>{copystatus.textContent=''; copystatus.className='';},1800);
+  }, ()=>{
+    copystatus.textContent = 'Copy failed (try downloading CSV)';
+  });
+}
+
+// Wire up events and state
+function getState(){
+  const nom = parseFloat(nominal.value)/100;
+  const inf = parseFloat(inflation.value)/100;
+  const P = parseFloat(price.value);
+  const cust = parseFloat(cust_dep.value);
+  const tcont = parseFloat(tesla_contrib.value);
+  const net_dep = cust - tcont;
+  const mpay = parseFloat(monthly.value);
+  const npay = parseInt(nmonthly.value);
+  const bal = parseFloat(balloon.value);
+  const start_invested = P - net_dep;
+  const real_annual = (1+nom)/(1+inf) - 1;
+  const r_month_nom = Math.pow(1+nom,1/12) - 1;
+  const r_month_real = Math.pow(1+real_annual,1/12) - 1;
+  let balances = []; let b = start_invested; balances.push(b);
+  for(let m=1;m<=npay+1;m++){
+    b = b*(1 + r_month_nom);
+    if(m <= npay) b -= mpay; else b -= bal;
+    balances.push(b);
+  }
+  let pv_monthly = 0;
+  for(let k=1;k<=npay;k++) pv_monthly += mpay / Math.pow(1 + r_month_real, k);
+  const pv_balloon = bal / Math.pow(1 + r_month_real, npay+1);
+  const pv_total = net_dep + pv_monthly + pv_balloon;
+  const saving = P - pv_total;
+  return {balances, start_invested, pv_total, real_annual, P, cust, tcont, net_dep, mpay, npay, bal, nom, inf, final_nominal: balances[balances.length-1], saving};
+}
+
+function refresh(){
+  const state = getState();
+  // update UI displays incl slider percentages
+  nominal_val.textContent = (state.nom*100).toFixed(1);
+  inflation_val.textContent = (state.inf*100).toFixed(1);
+  start_inv_el.textContent = fmt(state.start_invested);
+  final_bal_el.textContent = fmt(state.final_nominal);
+  pv_out_el.textContent = fmt(state.pv_total);
+  eff_price_el.textContent = fmt(state.pv_total);
+  saving_el.textContent = fmt(state.saving);
+  real_rate_el.textContent = (state.real_annual*100).toFixed(4) + '%';
+  drawChart(state.balances);
+  lastState = state;
+  return state;
+}
+
+const inputs = [nominal, inflation, comp, price, cust_dep, tesla_contrib, monthly, nmonthly, balloon];
+inputs.forEach(i=>i.addEventListener('input', refresh));
+
+downloadBtn.addEventListener('click', ()=>{
+  const htmlContent = '<!doctype html>\\n' + document.documentElement.outerHTML;
+  const blob = new Blob([htmlContent], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'tesla_pcp_calculator_offline_v3.html'; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+exportCsvBtn.addEventListener('click', ()=>{
+  const s = refresh();
+  exportSummaryCSV({
+    P: s.P, cust: s.cust, tcont: s.tcont, net_dep: s.net_dep, mpay: s.mpay, npay: s.npay, bal: s.bal,
+    nom: s.nom, inf: s.inf, real_annual: s.real_annual, start_invested: s.start_invested, final_nominal: s.final_nominal, pv_total: s.pv_total, saving: s.saving
+  });
+});
+
+exportMonthlyCsvBtn.addEventListener('click', ()=>{
+  const s = refresh();
+  exportMonthlyCSV({balances: s.balances});
+});
+
+copyBtn.addEventListener('click', ()=>{
+  const s = refresh();
+  copySummaryToClipboard(s);
+});
+
+// initial render
+let lastState = null;
+refresh();
+</script>
+</body>
+</html>
