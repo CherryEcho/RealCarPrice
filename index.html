@@ -1,1 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tesla PCP Calculator — Offline (v6)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#0f1724;--card:#071122;--muted:#9aa4b2;--accent:#00d1b2;--glass:rgba(255,255,255,0.03);color-scheme:dark}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6}
+.container{max-width:1020px;margin:22px auto;padding:20px}
+.header{display:flex;align-items:center;gap:14px;justify-content:space-between}
+h1{margin:0;font-size:18px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.col{flex:1 1 280px;min-width:220px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input[type=range]{width:100%}
+.value{font-size:16px;font-weight:700;color:#fff;margin-top:6px} /* numeric values bolded */
+.outputs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.out{background:var(--glass);padding:12px;border-radius:8px}
+.out .k{font-size:12px;color:var(--muted)} .out .v{font-size:16px;font-weight:700}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.controls input[type=number], select{background:rgba(255,255,255,0.02);border:none;color:#fff;padding:8px;border-radius:8px;width:100%}
+.small{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:8px;align-items:center;margin-top:12px}
+.btn{background:var(--accent);color:#052026;padding:8px 12px;border-radius:10px;font-weight:700;border:none;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+canvas{display:block;margin:12px auto;border-radius:8px;background:transparent}
+.footer{margin-top:12px;color:var(--muted);font-size:13px}
+.inline{display:flex;gap:8px;align-items:center}
+.legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.copyok{color:#8de2c6;font-weight:700}
+.boldhead{font-weight:400;color:#fff;margin-bottom:6px} /* headers now normal weight */
+@media(max-width:840px){.outputs{grid-template-columns:1fr} .grid-3{grid-template-columns:1fr} .header{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="container card">
+  <div class="header">
+    <div>
+      <h1>Tesla PCP — Real Cost & Investment (Offline, v6)</h1>
+      <div class="small">Headers are now normal weight; numeric values are bold for clarity.</div>
+    </div>
+    <div class="inline">
+      <button id="downloadBtn" class="btn">Download HTML</button>
+      <button id="exportCsvBtn" class="btn-ghost">Export summary CSV</button>
+      <button id="exportMonthlyCsvBtn" class="btn-ghost">Export monthly CSV</button>
+    </div>
+  </div>
 
+  <!-- DEAL PARAMETERS at top -->
+  <div style="margin-top:12px" class="card">
+    <div class="small boldhead">Deal parameters (edit before adjusting sliders)</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:180px"><label>On-the-road price (£)</label><input id="price" type="number" value="39990"></div>
+      <div style="flex:1;min-width:180px"><label>Customer deposit (£)</label><input id="cust_dep" type="number" value="8600"></div>
+      <div style="flex:1;min-width:180px"><label>Tesla deposit contribution (£)</label><input id="tesla_contrib" type="number" value="3000"></div>
+      <div style="flex:1;min-width:150px"><label>Monthly payment (£)</label><input id="monthly" type="number" value="299"></div>
+      <div style="flex:1;min-width:150px"><label>Monthly payments (count)</label><input id="nmonthly" type="number" value="47"></div>
+      <div style="flex:1;min-width:180px"><label>Optional final payment (balloon)</label><input id="balloon" type="number" value="17334"></div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:14px;">
+    <div class="col">
+      <div class="boldhead">Nominal investment return (% pa)</div>
+      <input id="nominal" type="range" min="0" max="12" step="0.1" value="5">
+      <div class="value"><span id="nominal_val">5.0</span>% <span style="color:var(--muted);font-weight:600;margin-left:8px">after tax:</span> <span id="nominal_after_tax" style="font-weight:700">3.75</span>%</div>
+    </div>
+    <div class="col">
+      <div class="boldhead">Inflation (% pa)</div>
+      <input id="inflation" type="range" min="0" max="8" step="0.1" value="3">
+      <div class="value"><span id="inflation_val">3.0</span>%</div>
+    </div>
+    <div class="col">
+      <div class="boldhead">Tax rate on nominal returns</div>
+      <input id="tax" type="range" min="0" max="60" step="0.5" value="25">
+      <div class="value"><span id="tax_val">25.0</span>%</div>
+      <div class="small" style="margin-top:6px">Tax reduces the nominal investment return (used in balance growth).</div>
+    </div>
+  </div>
+
+  <div class="outputs" style="margin-top:12px">
+    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate">—</div></div>
+    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv">—</div></div>
+    <div class="out"><div class="k">Final nominal balance (after 48 mo)</div><div class="v" id="final_bal">—</div></div>
+    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price">—</div></div>
+    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving">—</div></div>
+    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest">—</div></div>
+  </div>
+
+  <div class="grid-3" style="margin-top:12px">
+    <div class="card" style="padding:12px;text-align:center">
+      <canvas id="chart" width="520" height="300"></canvas>
+      <div class="legend"><div style="width:10px;height:10px;background:#00d1b2;border-radius:2px"></div><div>Invested balance (nominal)</div></div>
+    </div>
+    <div class="card" style="padding:12px">
+      <div class="small">Quick actions</div>
+      <div style="height:8px"></div>
+      <button id="copyBtn" class="btn-ghost">Copy key numbers to clipboard</button>
+      <div id="copystatus" style="margin-top:8px"></div>
+      <div style="height:12px"></div>
+      <div class="small">Notes</div>
+      <div class="small" style="margin-top:6px">Effective price today = present value today of your own payments (net deposit + discounted monthly payments + discounted balloon). This is your economic cost in today's £.</div>
+    </div>
+    <div class="card" style="padding:12px">
+      <div class="small">Export</div>
+      <div style="height:8px"></div>
+      <button id="exportCsvBtn2" class="btn-ghost">Export summary CSV (2dp)</button>
+      <button id="exportMonthlyCsvBtn2" class="btn-ghost" style="margin-top:8px">Export monthly CSV with interest (2dp)</button>
+      <div style="height:12px"></div>
+      <div class="small">CSV includes columns: month, start_balance, interest_earned, withdrawal, end_balance, cumulative_interest.</div>
+    </div>
+  </div>
+
+  <div class="footer small">Use the "Download HTML" button to save a copy of the current state. This file is fully offline.</div>
+</div>
+
+<script>
+function fmt(x){ return '£' + Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function num2(x){ return (Math.round(x*100)/100).toFixed(2); }
+function csvEscape(s){ if(typeof s === 'number') return s; return '"' + String(s).replace(/"/g,'""') + '"'; }
+
+// Elements
+const nominal = document.getElementById('nominal'), inflation = document.getElementById('inflation'), tax = document.getElementById('tax');
+const nominal_val = document.getElementById('nominal_val'), inflation_val = document.getElementById('inflation_val'), tax_val = document.getElementById('tax_val');
+const nominal_after_tax = document.getElementById('nominal_after_tax');
+const start_inv_el = document.getElementById('start_inv'), real_rate_el = document.getElementById('real_rate');
+const final_bal_el = document.getElementById('final_bal'), eff_price_el = document.getElementById('eff_price');
+const saving_el = document.getElementById('saving'), cum_interest_el = document.getElementById('cum_interest');
+
+const price = document.getElementById('price'), cust_dep = document.getElementById('cust_dep'), tesla_contrib = document.getElementById('tesla_contrib');
+const monthly = document.getElementById('monthly'), nmonthly = document.getElementById('nmonthly'), balloon = document.getElementById('balloon');
+
+const downloadBtn = document.getElementById('downloadBtn');
+const exportSummaryBtn = document.getElementById('exportCsvBtn2'), exportMonthlyBtn = document.getElementById('exportMonthlyCsvBtn2');
+const copyBtn = document.getElementById('copyBtn'), copystatus = document.getElementById('copystatus');
+
+const canvas = document.getElementById('chart'); const ctx = canvas.getContext('2d');
+
+function getState(){
+  const nom = parseFloat(nominal.value)/100;
+  const inf = parseFloat(inflation.value)/100;
+  const taxRate = parseFloat(tax.value)/100;
+  const after_tax_nom = nom * (1 - taxRate); // tax applies to nominal return
+  const P = parseFloat(price.value);
+  const cust = parseFloat(cust_dep.value);
+  const tcont = parseFloat(tesla_contrib.value);
+  const net_dep = cust - tcont;
+  const mpay = parseFloat(monthly.value);
+  const npay = parseInt(nmonthly.value);
+  const bal = parseFloat(balloon.value);
+  const start_invested = P - net_dep;
+  const real_annual = (1 + after_tax_nom) / (1 + inf) - 1;
+  const r_month_nom = Math.pow(1+after_tax_nom, 1/12) - 1;
+  const r_month_real = Math.pow(1+real_annual, 1/12) - 1;
+
+  // simulate month-by-month with interest earned and cumulative interest
+  let balances = []; let interest_earned_arr = []; let cumulative_interest = 0;
+  let b = start_invested; balances.push(b); interest_earned_arr.push(0);
+  for(let m=1;m<=npay+1;m++){
+    const before = b;
+    b = b * (1 + r_month_nom);
+    const interest_earned = b - before;
+    cumulative_interest += interest_earned;
+    let withdrawal = 0;
+    if(m <= npay){ withdrawal = mpay; b -= mpay; } else { withdrawal = bal; b -= bal; }
+    balances.push(b);
+    interest_earned_arr.push(interest_earned);
+  }
+
+  // PV of outflows using real monthly rate (discount)
+  let pv_monthly = 0;
+  for(let k=1;k<=npay;k++){
+    pv_monthly += mpay / Math.pow(1 + r_month_real, k);
+  }
+  const pv_balloon = bal / Math.pow(1 + r_month_real, npay+1);
+  const pv_total = net_dep + pv_monthly + pv_balloon;
+  const saving = P - pv_total;
+
+  return {
+    nom, inf, taxRate, after_tax_nom, P, cust, tcont, net_dep, mpay, npay, bal,
+    start_invested, real_annual, r_month_nom, r_month_real, balances, interest_earned_arr, cumulative_interest, pv_total, saving
+  };
+}
+
+function refresh(){
+  const s = getState();
+  // update slider displays and after-tax display (values bolded)
+  nominal_val.textContent = (s.nom*100).toFixed(1);
+  inflation_val.textContent = (s.inf*100).toFixed(1);
+  tax_val.textContent = (s.taxRate*100).toFixed(1);
+  nominal_after_tax.textContent = (s.after_tax_nom*100).toFixed(2);
+
+  // outputs
+  start_inv_el.textContent = fmt(s.start_invested);
+  final_bal_el.textContent = fmt(s.balances[s.balances.length-1]);
+  eff_price_el.textContent = fmt(s.pv_total);
+  saving_el.textContent = fmt(s.saving);
+  cum_interest_el.textContent = fmt(s.cumulative_interest);
+  real_rate_el.textContent = (s.real_annual*100).toFixed(4) + '%';
+
+  drawChart(s.balances);
+
+  return s;
+}
+
+// Chart drawing
+function drawChart(data){
+  const W = canvas.width = Math.min(860, Math.max(360, document.body.clientWidth * 0.55));
+  const H = canvas.height = 300;
+  ctx.clearRect(0,0,W,H);
+  const m = {l:52,r:16,t:22,b:40};
+  const innerW = W - m.l - m.r, innerH = H - m.t - m.b;
+  const maxVal = Math.max(...data), minVal = Math.min(...data);
+  const pad = Math.max(200, (maxVal - minVal) * 0.06);
+  const yMax = maxVal + pad, yMin = Math.max(0, minVal - pad);
+
+  // bg
+  ctx.fillStyle = 'rgba(255,255,255,0.02)'; ctx.fillRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for(let i=0;i<=4;i++){
+    const y = m.t + i*(innerH/4);
+    ctx.beginPath(); ctx.moveTo(m.l,y); ctx.lineTo(W-m.r,y); ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath();
+  ctx.moveTo(m.l,m.t); ctx.lineTo(m.l,H-m.b); ctx.moveTo(m.l,H-m.b); ctx.lineTo(W-m.r,H-m.b); ctx.stroke();
+
+  // y labels
+  ctx.fillStyle = '#9aa4b2'; ctx.font = '12px system-ui, Arial';
+  for(let i=0;i<=4;i++){
+    const y = m.t + i*(innerH/4);
+    const val = Math.round(yMax - i*((yMax-yMin)/4));
+    ctx.fillText('£' + val.toLocaleString(), 6, y+4);
+  }
+
+  // x ticks
+  const N = data.length;
+  const step = Math.max(1, Math.round(N/8));
+  ctx.textAlign = 'center'; ctx.fillStyle = '#9aa4b2';
+  for(let i=0;i<N;i+=step){
+    const x = m.l + (i/(N-1))*innerW;
+    ctx.fillText(String(i), x, H-12);
+  }
+
+  // path
+  ctx.beginPath();
+  for(let i=0;i<N;i++){
+    const x = m.l + (i/(N-1))*innerW;
+    const y = m.t + (1 - (data[i]-yMin)/(yMax-yMin))*innerH;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#00d1b2'; ctx.lineWidth = 2.2; ctx.stroke();
+
+  // fill
+  ctx.lineTo(m.l+innerW, H-m.b); ctx.lineTo(m.l, H-m.b); ctx.closePath();
+  ctx.fillStyle = 'rgba(0,209,178,0.08)'; ctx.fill();
+
+  // last point
+  const lastX = m.l + innerW;
+  const lastY = m.t + (1 - (data[N-1]-yMin)/(yMax-yMin))*innerH;
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(lastX,lastY,4,0,Math.PI*2); ctx.fill();
+  ctx.font = '12px system-ui, Arial'; ctx.fillText('£' + Math.round(data[N-1]).toLocaleString(), lastX-60, lastY-10);
+}
+
+// CSV export enhanced with interest columns and rounding to 2dp
+function exportSummaryCSV(state){
+  const rows = [
+    ['Parameter','Value'],
+    ['On-the-road price', parseFloat(state.P).toFixed(2)],
+    ['Customer deposit', parseFloat(state.cust).toFixed(2)],
+    ['Tesla contribution', parseFloat(state.tcont).toFixed(2)],
+    ['Net deposit', parseFloat(state.net_dep).toFixed(2)],
+    ['Monthly payment', parseFloat(state.mpay).toFixed(2)],
+    ['Number monthly payments', state.npay],
+    ['Balloon', parseFloat(state.bal).toFixed(2)],
+    ['Nominal return (annual %)', (state.nom*100).toFixed(2)],
+    ['Tax rate (%)', (state.taxRate*100).toFixed(2)],
+    ['Nominal after tax (%)', (state.after_tax_nom*100).toFixed(2)],
+    ['Inflation (annual %)', (state.inf*100).toFixed(2)],
+    ['Real annual rate (%)', (state.real_annual*100).toFixed(4)],
+    ['Start invested (nominal)', parseFloat(state.start_invested).toFixed(2)],
+    ['Final nominal leftover', parseFloat(state.final_nominal).toFixed(2)],
+    ['Effective price today', parseFloat(state.pv_total).toFixed(2)],
+    ['Saving vs paying cash today', parseFloat(state.saving).toFixed(2)],
+    ['Cumulative interest earned (nominal)', parseFloat(state.cumulative_interest).toFixed(2)]
+  ];
+  let csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  triggerDownload(csv, 'tesla_pcp_summary_v6.csv', 'text/csv');
+}
+
+function exportMonthlyCSV(state){
+  const header = ['month','start_balance','interest_earned','withdrawal','end_balance','cumulative_interest'];
+  const lines = [header.join(',')];
+  let cum = 0;
+  for(let i=0;i<state.balances.length-1;i++){
+    const start = state.balances[i];
+    const interest = state.interest_earned_arr[i+1]; // interest earned in month i+1
+    cum += interest;
+    // determine withdrawal: months 1..npay => monthly payment, last month => balloon
+    let withdrawal = 0;
+    if(i+1 <= state.npay) withdrawal = state.mpay; else withdrawal = state.bal;
+    lines.push([i, (Math.round(start*100)/100).toFixed(2), (Math.round(interest*100)/100).toFixed(2), (Math.round(withdrawal*100)/100).toFixed(2), (Math.round(state.balances[i+1]*100)/100).toFixed(2), (Math.round(cum*100)/100).toFixed(2)].join(','));
+  }
+  const csv = lines.join('\n');
+  triggerDownload(csv, 'tesla_pcp_monthly_v6.csv', 'text/csv');
+}
+
+function triggerDownload(content, filename, mime){
+  const blob = new Blob([content],{type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+// Copy to clipboard (rounded)
+function copySummaryToClipboard(state){
+  const lines = [
+    `Tesla PCP — Summary`,
+    `Price: £${parseFloat(state.P).toFixed(2)}`,
+    `Customer deposit: £${parseFloat(state.cust).toFixed(2)}`,
+    `Tesla contribution: £${parseFloat(state.tcont).toFixed(2)}`,
+    `Net deposit: £${parseFloat(state.net_dep).toFixed(2)}`,
+    `Monthly payment: £${parseFloat(state.mpay).toFixed(2)}`,
+    `Months: ${state.npay}`,
+    `Balloon: £${parseFloat(state.bal).toFixed(2)}`,
+    `Nominal return: ${(state.nom*100).toFixed(2)}%`,
+    `Tax rate: ${(state.taxRate*100).toFixed(2)}%`,
+    `Nominal after tax: ${(state.after_tax_nom*100).toFixed(2)}%`,
+    `Inflation: ${(state.inf*100).toFixed(2)}%`,
+    `Real annual: ${(state.real_annual*100).toFixed(4)}%`,
+    `Start invested: £${parseFloat(state.start_invested).toFixed(2)}`,
+    `Final nominal leftover: £${parseFloat(state.final_nominal).toFixed(2)}`,
+    `Effective price today: £${parseFloat(state.pv_total).toFixed(2)}`,
+    `Saving vs cash: £${parseFloat(state.saving).toFixed(2)}`,
+    `Cumulative interest earned (nominal): £${parseFloat(state.cumulative_interest).toFixed(2)}`
+  ].join('\n');
+  navigator.clipboard.writeText(lines).then(()=>{
+    copystatus.textContent = 'Copied ✓'; copystatus.className = 'copyok';
+    setTimeout(()=>{copystatus.textContent=''; copystatus.className='';},1800);
+  }, ()=>{
+    copystatus.textContent = 'Copy failed (try downloading CSV)';
+  });
+}
+
+// Wire up events
+const inputs = [nominal, inflation, tax, price, cust_dep, tesla_contrib, monthly, nmonthly, balloon];
+inputs.forEach(i=>i.addEventListener('input', refresh));
+
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  const htmlContent = '<!doctype html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([htmlContent], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'tesla_pcp_calculator_offline_v6.html'; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
+  const s = getState();
+  exportSummaryCSV({
+    P: s.P, cust: s.cust, tcont: s.tcont, net_dep: s.net_dep, mpay: s.mpay, npay: s.npay, bal: s.bal,
+    nom: s.nom, inf: s.inf, taxRate: s.taxRate, after_tax_nom: s.after_tax_nom, real_annual: s.real_annual, start_invested: s.start_invested, final_nominal: s.balances[s.balances.length-1], pv_total: s.pv_total, saving: s.saving, cumulative_interest: s.cumulative_interest
+  });
+});
+
+document.getElementById('exportMonthlyCsvBtn').addEventListener('click', ()=>{
+  const s = getState();
+  exportMonthlyCSV({balances: s.balances, interest_earned_arr: s.interest_earned_arr, npay: s.npay, mpay: s.mpay, bal: s.bal});
+});
+
+document.getElementById('exportCsvBtn2').addEventListener('click', ()=>{
+  const s = getState();
+  exportSummaryCSV({
+    P: s.P, cust: s.cust, tcont: s.tcont, net_dep: s.net_dep, mpay: s.mpay, npay: s.npay, bal: s.bal,
+    nom: s.nom, inf: s.inf, taxRate: s.taxRate, after_tax_nom: s.after_tax_nom, real_annual: s.real_annual, start_invested: s.start_invested, final_nominal: s.balances[s.balances.length-1], pv_total: s.pv_total, saving: s.saving, cumulative_interest: s.cumulative_interest
+  });
+});
+
+document.getElementById('exportMonthlyCsvBtn2').addEventListener('click', ()=>{
+  const s = getState();
+  exportMonthlyCSV({balances: s.balances, interest_earned_arr: s.interest_earned_arr, npay: s.npay, mpay: s.mpay, bal: s.bal});
+});
+
+document.getElementById('copyBtn').addEventListener('click', ()=>{ const s = getState(); copySummaryToClipboard(s); });
+
+// initial render
+refresh();
+
+</script>
+</body>
+</html>
