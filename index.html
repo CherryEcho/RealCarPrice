@@ -3,16 +3,18 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>PCP & Financing Playground — Real Cost Calculator (v7) — Improved sliders (v6)</title>
+<title>PCP & Financing Playground — Real Cost Calculator (v7) — Improved sliders (v5)</title>
 <style>
 :root{
   --bg:#0f1724;--card:#071122;--muted:#9aa4b2;--accent:#00d1b2;--glass:rgba(255,255,255,0.03);
   --highlight:rgba(0,209,178,0.12);color-scheme:dark;
+  --gap:10px; --radius:10px; --ui-padding:12px;
 }
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial,sans-serif;
-  background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6;}
-.container{max-width:1100px;margin:18px auto;padding:12px;position:relative}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial, sans-serif;
+  background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+.container{max-width:1100px;margin:18px auto;padding:12px; position:relative;}
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
 .header{display:flex;align-items:center;gap:12px;justify-content:space-between}
 h1{margin:0;font-size:18px}
@@ -22,40 +24,93 @@ h1{margin:0;font-size:18px}
 .control-box{padding:12px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03)}
 .label-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;cursor:pointer}
-input[type=range]{width:100%;height:40px;background:transparent;margin:0;padding:0;touch-action:pan-x;-webkit-appearance:none;}
-input,select,textarea{box-sizing:border-box;width:100%}
+input[type=range]{width:100%; -webkit-appearance:none; appearance:none; height:40px; background:transparent; margin:0; padding:0; touch-action:pan-x;}
+
+/* prettier, wider track + larger thumb for touch */
 input[type=range]::-webkit-slider-runnable-track{height:10px;background:rgba(255,255,255,0.06);border-radius:999px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:28px;width:28px;border-radius:50%;background:var(--accent);margin-top:-9px;box-shadow:0 6px 18px rgba(0,0,0,0.45);border:3px solid rgba(255,255,255,0.06)}
 input[type=range]::-moz-range-track{height:10px;background:rgba(255,255,255,0.06);border-radius:999px}
 input[type=range]::-moz-range-thumb{height:28px;width:28px;border-radius:50%;background:var(--accent);box-shadow:0 6px 18px rgba(0,0,0,0.45);border:3px solid rgba(255,255,255,0.06)}
+input[type=range]:focus { outline: none; }
 
+/* value display and bubble */
 .value{font-size:15px;font-weight:700;color:#fff;margin-top:8px;display:flex;gap:8px;align-items:center}
 .value .muted{color:var(--muted);font-weight:600;font-size:13px}
-.range-bubble{position:absolute;transform:translate(-50%,-120%);top:8px;background:#02121a;color:#cfeee3;padding:6px 8px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.4);font-weight:700;font-size:13px;white-space:nowrap;pointer-events:none;z-index:8;display:none;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+.range-bubble{
+  position:absolute; transform:translate(-50%, -120%); top:8px;
+  background:#02121a;color:#cfeee3;padding:6px 8px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.4);font-weight:700;font-size:13px;white-space:nowrap;pointer-events:none;
+  z-index:8;
+  display:none;
+}
 .range-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
 
-/* deal parameters grid and clipping fixes */
+/* deal parameters grid: use CSS grid for consistent wrapping across Android/iOS */
 .deal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:start}
-.deal-grid .col{min-width:0;box-sizing:border-box}
-.deal-grid input{width:100%;box-sizing:border-box}
 
-/* outputs */
+/* outputs & other panels (unchanged mostly) */
 .outputs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
-.out{background:rgba(255,255,255,0.03);padding:10px;border-radius:8px}
+.out{background:var(--glass);padding:10px;border-radius:8px}
 .out .k{font-size:12px;color:var(--muted)} .out .v{font-size:15px;font-weight:700}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+.controls input[type=number], select{background:rgba(255,255,255,0.02);border:none;color:#fff;padding:8px;border-radius:8px;width:100%}
 .small{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:8px;align-items:center;margin-top:8px}
 .btn{background:var(--accent);color:#052026;padding:8px 10px;border-radius:10px;font-weight:700;border:none;cursor:pointer; touch-action:manipulation}
 .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:7px 10px;border-radius:8px;cursor:pointer; touch-action:manipulation}
+canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
 .footer{margin-top:10px;color:var(--muted);font-size:12px}
+.inline{display:flex;gap:8px;align-items:center}
+.legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.copyok{color:#8de2c6;font-weight:700}
+.info{display:inline-block;margin-left:6px;color:var(--muted);cursor:pointer}
+.toggle{display:inline-flex;align-items:center;gap:8px;margin-top:6px}
 
 /* Tooltip */
-.tooltip{position:absolute;background:#02121a;color:#cfeee3;padding:12px;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.6);max-width:340px;font-size:13px;z-index:12010;line-height:1.35;opacity:0;transform:translateY(6px);transition:opacity .18s ease, transform .18s ease;pointer-events:auto}
-.tooltip.visible{opacity:1;transform:translateY(0)} .tooltip::after{content:"";position:absolute;width:10px;height:10px;transform:rotate(45deg);background:#02121a;left:50%;margin-left:-5px;top:-5px}
+.tooltip{
+  position:absolute; background:#02121a;color:#cfeee3;padding:12px;border-radius:10px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.6);max-width:340px;font-size:13px;z-index:12010;line-height:1.35;
+  opacity:0;transform:translateY(6px);transition:opacity .18s ease, transform .18s ease;pointer-events:none;
+  left:0; top:0;
+}
+.tooltip.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.tooltip::after{
+  content:""; position:absolute; width:10px; height:10px; transform:rotate(45deg);
+  background:#02121a; left:50%; margin-left:-5px; top:-5px;
+}
+
+/* modal overlay must be on top */
+.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,11,0.6);display:none;align-items:center;justify-content:center;z-index:20000}
+.modal{background:#071122;border-radius:12px;padding:18px;max-width:720px;color:#e6eef6;box-shadow:0 12px 40px rgba(0,0,0,0.6);max-height:90vh;overflow:auto}
+.modal h2{margin-top:0}
+.close-x{float:right;background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+
+/* subtle focus ring for keyboard users */
+:focus{outline: none}
+:focus-visible{outline:2px solid rgba(0,209,178,0.18);outline-offset:2px;border-radius:6px}
+
+/* slight glow on active control */
+.active-tip{box-shadow:0 8px 24px var(--highlight);border-radius:8px;}
 
 /* responsive tweaks */
-@media(max-width:900px){.outputs{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start}.subtitle{font-size:12px}.container{padding:10px;margin:8px}canvas{height:220px!important}}
-@media(max-width:520px){.outputs{grid-template-columns:1fr}.row{gap:8px}.col{min-width:140px}.value{font-size:14px}h1{font-size:16px}.tooltip{max-width:90%;font-size:13px}.range-bubble{display:block}}
+@media(max-width:900px){
+  .outputs{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:1fr}
+  .header{flex-direction:column;align-items:flex-start}
+  .subtitle{font-size:12px}
+  .outputs .out .v{font-size:14px}
+  .container{padding:10px;margin:8px}
+  canvas{height:220px!important}
+}
+@media(max-width:520px){
+  .outputs{grid-template-columns:1fr}
+  .row{gap:8px}
+  .col{min-width:140px}
+  .value{font-size:14px}
+  h1{font-size:16px}
+  .tooltip{max-width:90%; font-size:13px}
+  /* make bubbles visible by default on small screens for clarity */
+  .range-bubble{display:block}
+}
 </style>
 </head>
 <body>
@@ -73,6 +128,7 @@ input[type=range]::-moz-range-thumb{height:28px;width:28px;border-radius:50%;bac
     </div>
   </div>
 
+  <!-- DEAL PARAMETERS at top - switched to CSS grid for consistency across Android/iOS -->
   <div style="margin-top:10px" class="card">
     <div class="small" style="font-weight:600;color:#fff">Deal parameters (edit before adjusting sliders)</div>
     <div class="deal-grid" style="margin-top:8px">
@@ -199,56 +255,94 @@ input[type=range]::-moz-range-thumb{height:28px;width:28px;border-radius:50%;bac
   </div>
 
   <div class="footer small">To host this page online, upload the HTML file to GitHub Pages or Netlify. Use "Download HTML" to save a snapshot.</div>
+
+  <!-- tooltip element inserted inside container to avoid mobile viewport inset issues -->
   <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 
+<!-- help modal (moved after tooltip to ensure overlay) -->
 <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <button class="close-x" id="modalClose" title="Close">✕</button>
     <h2 id="helpTitle">Help & FAQ</h2>
+    <h3>What does this do?</h3>
+    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return after tax minus inflation).</p>
+    <h3>Tooltips</h3>
     <p>Tap the ℹ️ icon, the label, or the numeric value next to a control to open a tooltip. The tooltip will remain open until you tap anywhere outside it. Press <kbd>Esc</kbd> to dismiss on keyboard.</p>
+    <h3>Loan APR vs monthly</h3>
+    <p>Check "Compute monthly payment from Loan APR" to auto-calc monthly payments using the APR, financed amount (price - customer deposit) and balloon.</p>
+    <h3>Balloon</h3>
+    <p>Uncheck "I'll pay the balloon" to model returning the car at the end of the PCP (balloon = £0).</p>
+    <h3>CSV export</h3>
+    <p>The monthly CSV includes interest earned each month and a cumulative interest column.</p>
     <div style="margin-top:10px;text-align:right"><button id="modalClose2" class="btn">Close</button></div>
   </div>
 </div>
 
 <script>
-// small helpers
+// --- helpers & formatters ---
 const fmt = x => '£' + Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const num2 = x => (Math.round(x*100)/100).toFixed(2);
+const csvEscape = s => (typeof s === 'number'? s : '"' + String(s).replace(/"/g,'""') + '"');
 
 // elements
 const container = document.getElementById('app');
 const tooltip = document.getElementById('tooltip');
+const helpBtn = document.getElementById('helpBtn');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalClose = document.getElementById('modalClose');
+const modalClose2 = document.getElementById('modalClose2');
+
 const nominal = document.getElementById('nominal'), inflation = document.getElementById('inflation'), tax = document.getElementById('tax');
 const nominal_val = document.getElementById('nominal_val'), inflation_val = document.getElementById('inflation_val'), tax_val = document.getElementById('tax_val');
 const nominal_after_tax = document.getElementById('nominal_after_tax');
+const tax_on_real_cb = document.getElementById('tax_on_real');
+const loan_apr_el = document.getElementById('loan_apr'), loan_apr_span = document.getElementById('loan_apr_span'), use_loan_apr_cb = document.getElementById('use_loan_apr');
+const pay_balloon_cb = document.getElementById('pay_balloon');
+
+const start_inv_el = document.getElementById('start_inv'), real_rate_el = document.getElementById('real_rate');
+const final_bal_el = document.getElementById('final_bal'), eff_price_el = document.getElementById('eff_price');
+const saving_el = document.getElementById('saving'), cum_interest_el = document.getElementById('cum_interest');
+const monthly_used_el = document.getElementById('monthly_used'), financed_amount_el = document.getElementById('financed_amount');
+
 const price = document.getElementById('price'), cust_dep = document.getElementById('cust_dep'), tesla_contrib = document.getElementById('tesla_contrib');
 const monthly = document.getElementById('monthly'), nmonthly = document.getElementById('nmonthly'), balloon = document.getElementById('balloon');
 
-// state for tooltip persistence
-let activeTipEl = null;
-let lastTooltipOpened = 0;
+const downloadBtn = document.getElementById('downloadBtn');
+const exportSummaryBtn = document.getElementById('exportSummaryBtn'), exportMonthlyBtn = document.getElementById('exportMonthlyBtn');
+const copyBtn = document.getElementById('copyBtn'), copystatus = document.getElementById('copystatus');
+const exportCsvBtn = document.getElementById('exportCsvBtn'), exportMonthlyCsvBtn = document.getElementById('exportMonthlyCsvBtn');
 
+const canvas = document.getElementById('chart'); const ctx = canvas.getContext('2d');
+
+// --- Tooltip improvements ---
+let activeTipEl = null;
 function computeTooltipPosition(el){
   const rect = el.getBoundingClientRect();
   const crect = container.getBoundingClientRect();
-  const width = Math.min(340, Math.max(220, rect.width*2));
-  let left = (rect.left - crect.left) + rect.width/2 - width/2;
-  left = Math.max(8, Math.min(crect.width - width - 8, left));
+  const tooltipWidth = Math.min(340, Math.max(220, rect.width * 2));
+  let left = (rect.left - crect.left) + rect.width/2 - tooltipWidth/2;
+  left = Math.max(8, Math.min(crect.width - tooltipWidth - 8, left));
   let top = (rect.top - crect.top) + rect.height + 12;
-  const estH = tooltip.offsetHeight || 64;
-  if(top + estH + 12 > crect.height) top = (rect.top - crect.top) - estH - 12;
+  const estTooltipHeight = tooltip.offsetHeight || 64;
+  if(top + estTooltipHeight + 12 > crect.height){
+    top = (rect.top - crect.top) - estTooltipHeight - 12;
+  }
   if(top < 8) top = 8;
-  return {left, top, width};
+  return { left, top, width: tooltipWidth };
 }
 
 function showTooltipForElement(el){
   if(!el) return;
   const tip = el.getAttribute('data-tip');
   if(!tip) return;
-  if(activeTipEl === el){ hideTooltip(); return; }
+  if(activeTipEl === el){
+    hideTooltip();
+    return;
+  }
   if(activeTipEl && activeTipEl !== el){
-    const prev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
-    if(prev) prev.classList.remove('active-tip');
+    const containerPrev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
+    if(containerPrev) containerPrev.classList.remove('active-tip');
   }
   activeTipEl = el;
   tooltip.textContent = tip;
@@ -257,30 +351,16 @@ function showTooltipForElement(el){
   const containerEl = el.closest('.col') || el.closest('label') || el;
   if(containerEl) containerEl.classList.add('active-tip');
   tooltip.style.width = '';
-  lastTooltipOpened = Date.now();
   requestAnimationFrame(()=>{
     const pos = computeTooltipPosition(el);
     tooltip.style.left = pos.left + 'px';
     tooltip.style.top = pos.top + 'px';
     tooltip.style.width = pos.width + 'px';
   });
+
   document.addEventListener('keydown', escHandler);
   window.addEventListener('resize', repositionTooltip);
   window.addEventListener('scroll', repositionTooltip, true);
-}
-
-function hideTooltip(){
-  if(!tooltip.classList.contains('visible')) return;
-  tooltip.classList.remove('visible');
-  tooltip.setAttribute('aria-hidden','true');
-  if(activeTipEl){
-    const prev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
-    if(prev) prev.classList.remove('active-tip');
-    activeTipEl = null;
-  }
-  document.removeEventListener('keydown', escHandler);
-  window.removeEventListener('resize', repositionTooltip);
-  window.removeEventListener('scroll', repositionTooltip, true);
 }
 
 function repositionTooltip(){
@@ -290,64 +370,186 @@ function repositionTooltip(){
   tooltip.style.top = pos.top + 'px';
 }
 
+function hideTooltip(){
+  if(!tooltip.classList.contains('visible')) return;
+  tooltip.classList.remove('visible');
+  tooltip.setAttribute('aria-hidden','true');
+  if(activeTipEl){
+    const containerPrev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
+    if(containerPrev) containerPrev.classList.remove('active-tip');
+    activeTipEl = null;
+  }
+  document.removeEventListener('keydown', escHandler);
+  window.removeEventListener('resize', repositionTooltip);
+  window.removeEventListener('scroll', repositionTooltip, true);
+}
 function escHandler(e){ if(e.key === 'Escape' || e.key === 'Esc') hideTooltip(); }
 
-// attach handlers to data-tip elements
+// attach tooltip handlers (click + hover + touchstart)
+// also ensure labels/values reliably open the tooltip even when they focus inputs
 document.querySelectorAll('[data-tip]').forEach(el=>{
-  el.addEventListener('touchstart', (ev)=>{ ev.stopPropagation && ev.stopPropagation(); showTooltipForElement(el); }, {passive:true});
-  el.addEventListener('click', (ev)=>{ ev.stopPropagation && ev.stopPropagation(); showTooltipForElement(el); });
+  // touchstart helps mobile show tooltip before focus/scroll occurs
+  el.addEventListener('touchstart', (ev)=>{ ev.stopPropagation(); showTooltipForElement(el); }, {passive:true});
+  el.addEventListener('click', (ev)=>{ ev.stopPropagation(); showTooltipForElement(el); });
   if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
     el.addEventListener('mouseenter', ()=> showTooltipForElement(el));
     el.addEventListener('mouseleave', ()=> hideTooltip());
   }
 });
 
-// hide when tapping/clicking outside — ignore taps that happen immediately after opening
+// hide tooltip when clicking/tapping outside tooltip and data-tip elements
 document.addEventListener('click', (e)=>{
   if(e.target.closest('[data-tip]')) return;
   if(e.target.closest('#tooltip')) return;
-  if(Date.now() - lastTooltipOpened < 450) return;
   hideTooltip();
 });
 document.addEventListener('touchstart', (e)=>{
   if(e.target.closest('[data-tip]')) return;
   if(e.target.closest('#tooltip')) return;
-  if(Date.now() - lastTooltipOpened < 450) return;
   hideTooltip();
 }, {passive:true});
 
-// prevent focus race from hiding tooltip when tapping labels/values
+// fix: inputs focus sometimes fires before click handler on labels (race). Delay hide check slightly.
 document.querySelectorAll('input, select, textarea, button').forEach(el=>{
-  el.addEventListener('focus', ()=>{
+  el.addEventListener('focus', (ev)=>{
     setTimeout(()=>{
       const focused = document.activeElement;
-      if(activeTipEl && focused && focused.closest && activeTipEl.closest && focused.closest('.col') === activeTipEl.closest('.col')) return;
-      if(Date.now() - lastTooltipOpened > 400) hideTooltip();
-    }, 80);
+      // if tooltip is open and the focused element is inside same .col as activeTipEl, do nothing
+      if(activeTipEl && focused && focused.closest && activeTipEl.closest && focused.closest('.col') === activeTipEl.closest('.col')){ return; }
+      // otherwise hide
+      hideTooltip();
+    }, 0);
   });
 });
 
-// range visuals (bubble & fill)
+// --- Financial functions (unchanged) ---
+function computeMonthlyFromAPR(financed, apr_annual, n, balloon_val){
+  if(n <= 0) return 0;
+  const r = Math.pow(1 + apr_annual, 1/12) - 1;
+  const discounted_balloon = balloon_val / Math.pow(1 + r, n);
+  const numerator = (financed - discounted_balloon) * r;
+  const denom = 1 - Math.pow(1 + r, -n);
+  if(Math.abs(denom) < 1e-12) return 0;
+  return numerator / denom;
+}
+
+function getState(){
+  const nom = parseFloat(nominal.value)/100 || 0;
+  const inf = parseFloat(inflation.value)/100 || 0;
+  const taxRate = parseFloat(tax.value)/100 || 0;
+  const tax_on_real = tax_on_real_cb.checked;
+  const loan_apr = parseFloat(loan_apr_el.value)/100 || 0;
+  const use_loan_apr = use_loan_apr_cb.checked;
+  const pay_balloon = pay_balloon_cb.checked;
+
+  const P = parseFloat(price.value) || 0;
+  const cust = parseFloat(cust_dep.value) || 0;
+  const tcont = parseFloat(tesla_contrib.value) || 0;
+  const customer_deposit = cust;
+  const net_dep = cust - tcont;
+  const mpay_input = parseFloat(monthly.value) || 0;
+  const npay = parseInt(nmonthly.value) || 0;
+  const balloon_input = parseFloat(balloon.value) || 0;
+  const balloon_val = pay_balloon ? balloon_input : 0;
+
+  const start_invested = P - net_dep;
+  const financed_amount = P - customer_deposit;
+
+  let after_tax_nom, real_before_tax, after_tax_real, real_annual;
+  if(!tax_on_real){
+    after_tax_nom = nom * (1 - taxRate);
+    real_annual = (1 + after_tax_nom) / (1 + inf) - 1;
+  } else {
+    real_before_tax = (1 + nom) / (1 + inf) - 1;
+    after_tax_real = real_before_tax * (1 - taxRate);
+    real_annual = after_tax_real;
+    after_tax_nom = Math.pow((1 + after_tax_real) * (1 + inf), 1) - 1;
+  }
+
+  let r_month_nom;
+  if(!tax_on_real){
+    r_month_nom = Math.pow(1 + after_tax_nom, 1/12) - 1;
+  } else {
+    const after_tax_real = real_annual;
+    r_month_nom = Math.pow((1 + after_tax_real) * (1 + inf), 1/12) - 1;
+  }
+  const r_month_real = Math.pow(1 + real_annual, 1/12) - 1;
+
+  let monthly_used = mpay_input;
+  if(use_loan_apr){
+    monthly_used = computeMonthlyFromAPR(financed_amount, loan_apr, npay, balloon_val);
+  }
+
+  let balances = [], interest_arr = [], cum_interest = 0;
+  let b = start_invested;
+  balances.push(b); interest_arr.push(0);
+  for(let m=1;m<=npay+1;m++){
+    const before = b;
+    b = b * (1 + r_month_nom);
+    const interest_earned = b - before;
+    cum_interest += interest_earned;
+    let withdrawal = 0;
+    if(m <= npay){ withdrawal = monthly_used; b -= monthly_used; } else { withdrawal = balloon_val; b -= balloon_val; }
+    balances.push(b);
+    interest_arr.push(interest_earned);
+  }
+
+  let pv_monthly = 0;
+  for(let k=1;k<=npay;k++){
+    pv_monthly += monthly_used / Math.pow(1 + r_month_real, k);
+  }
+  const pv_balloon = balloon_val / Math.pow(1 + r_month_real, npay+1);
+  const pv_total = net_dep + pv_monthly + pv_balloon;
+  const saving = P - pv_total;
+  const final_nominal = balances[balances.length-1];
+
+  return {
+    nom, inf, taxRate, tax_on_real, loan_apr, use_loan_apr, pay_balloon,
+    P, cust, tcont, customer_deposit, net_dep, financed_amount,
+    mpay_input, monthly_used, npay, balloon_input, ball: balloon_val,
+    start_invested, real_annual, r_month_nom, r_month_real, balances, interest_arr, cumulative_interest: cum_interest, pv_total, saving, after_tax_nom, final_nominal
+  };
+}
+
+// --- UI binding & slider visuals ---
 function updateRangeVisual(rangeEl){
-  const min = parseFloat(rangeEl.min)||0; const max = parseFloat(rangeEl.max)||100;
+  const min = parseFloat(rangeEl.min) || 0;
+  const max = parseFloat(rangeEl.max) || 100;
   const val = parseFloat(rangeEl.value);
-  const pct = ((val-min)/(max-min))*100;
-  rangeEl.style.background = `linear-gradient(90deg, var(--accent) ${pct}%, rgba(255,255,255,0.06) ${pct}%)`;
-  const col = rangeEl.closest('.col'); if(!col) return;
+  const pctVal = ( (val - min) / (max - min) ) * 100;
+  // colored fill for the left side
+  rangeEl.style.background = `linear-gradient(90deg, var(--accent) ${pctVal}%, rgba(255,255,255,0.06) ${pctVal}%)`;
+
+  // position bubble
+  const col = rangeEl.closest('.col');
+  if(!col) return;
   let bubble = col.querySelector('.range-bubble');
-  if(!bubble){ bubble = document.createElement('span'); bubble.className='range-bubble'; col.appendChild(bubble); }
-  const step = parseFloat(rangeEl.step)||1; const decimals = ((''+step).includes('.'))?step.toString().split('.')[1].length:0;
-  bubble.textContent = Number(val).toFixed(decimals) + '%';
-  const rect = rangeEl.getBoundingClientRect(); const crect = col.getBoundingClientRect();
-  const left = ((pct/100)*rect.width) + (rect.left - crect.left);
+  if(!bubble){
+    bubble = document.createElement('span');
+    bubble.className = 'range-bubble';
+    col.appendChild(bubble);
+  }
+  const step = parseFloat(rangeEl.step) || 1;
+  const decimals = (('' + step).includes('.')) ? (step.toString().split('.')[1].length) : 0;
+  const text = (Number(val).toFixed(decimals)) + '%';
+  bubble.textContent = text;
+  const rect = rangeEl.getBoundingClientRect();
+  const crect = col.getBoundingClientRect();
+  const left = ( (pctVal/100) * (rect.width) ) + (rect.left - crect.left);
   bubble.style.left = left + 'px';
-  if(window.matchMedia('(hover: none)').matches) bubble.style.display='block'; else if(rangeEl.matches(':active')) bubble.style.display='block'; else bubble.style.display='none';
+  if(window.matchMedia('(hover: none)').matches){
+    bubble.style.display = 'block';
+  } else {
+    if(rangeEl.matches(':active')) bubble.style.display = 'block';
+  }
 }
 
 function initRangeUI(){
   document.querySelectorAll('input[type=range]').forEach(r=>{
     const col = r.closest('.col');
-    if(col && !col.querySelector('.range-bubble')){ const b = document.createElement('span'); b.className='range-bubble'; col.appendChild(b); }
+    if(col && !col.querySelector('.range-bubble')){
+      const b = document.createElement('span'); b.className='range-bubble'; col.appendChild(b);
+    }
     updateRangeVisual(r);
     r.addEventListener('input', ()=>{ updateRangeVisual(r); refresh(); });
     r.addEventListener('pointerdown', ()=>{ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='block'; });
@@ -359,104 +561,240 @@ function initRangeUI(){
   });
 }
 
-// core compute (same as before but minimal exports omitted for brevity)
-function computeMonthlyFromAPR(financed, apr_annual, n, balloon_val){
-  if(n <= 0) return 0;
-  const r = Math.pow(1+apr_annual,1/12)-1;
-  const discounted_balloon = balloon_val / Math.pow(1+r,n);
-  const numerator = (financed - discounted_balloon) * r;
-  const denom = 1 - Math.pow(1+r,-n);
-  if(Math.abs(denom) < 1e-12) return 0;
-  return numerator/denom;
+function ensureRangeMeta(){
+  document.querySelectorAll('input[type=range]').forEach(r=>{
+    const col = r.closest('.col');
+    if(!col) return;
+    if(!col.querySelector('.range-meta')){
+      const meta = document.createElement('div'); meta.className = 'range-meta';
+      const min = r.getAttribute('min') || 0;
+      const max = r.getAttribute('max') || 100;
+      meta.innerHTML = `<span class="min">${min}%</span><span class="max">${max}%</span>`;
+      r.insertAdjacentElement('afterend', meta);
+    }
+  });
 }
 
-function getState(){
-  const nom = parseFloat(nominal.value)/100 || 0;
-  const inf = parseFloat(inflation.value)/100 || 0;
-  const taxRate = parseFloat(tax.value)/100 || 0;
-  const tax_on_real = document.getElementById('tax_on_real').checked;
-  const loan_apr = parseFloat(document.getElementById('loan_apr').value)/100 || 0;
-  const use_loan_apr = document.getElementById('use_loan_apr').checked;
-  const pay_balloon = document.getElementById('pay_balloon').checked;
-  const P = parseFloat(price.value) || 0;
-  const cust = parseFloat(cust_dep.value) || 0;
-  const tcont = parseFloat(tesla_contrib.value) || 0;
-  const net_dep = cust - tcont;
-  const mpay_input = parseFloat(monthly.value) || 0;
-  const npay = parseInt(nmonthly.value) || 0;
-  const balloon_input = parseFloat(balloon.value) || 0;
-  const balloon_val = pay_balloon ? balloon_input : 0;
-  const start_invested = P - net_dep;
-  const financed_amount = P - cust;
-
-  let after_tax_nom, real_annual;
-  if(!tax_on_real){
-    after_tax_nom = nom * (1 - taxRate);
-    real_annual = (1 + after_tax_nom)/(1 + inf) - 1;
-  } else {
-    const real_before_tax = (1+nom)/(1+inf)-1;
-    const after_tax_real = real_before_tax * (1 - taxRate);
-    real_annual = after_tax_real;
-    after_tax_nom = Math.pow((1 + after_tax_real)*(1 + inf), 1) - 1;
-  }
-
-  const r_month_nom = Math.pow(1 + (after_tax_nom||0), 1/12) - 1;
-  const r_month_real = Math.pow(1 + real_annual, 1/12) - 1;
-  let monthly_used = mpay_input;
-  if(use_loan_apr) monthly_used = computeMonthlyFromAPR(financed_amount, loan_apr, npay, balloon_val);
-
-  let balances=[start_invested], interest_arr=[0], cum_interest=0, b=start_invested;
-  for(let m=1;m<=npay+1;m++){
-    const before=b;
-    b = b * (1 + r_month_nom);
-    const interest_earned = b - before;
-    cum_interest += interest_earned;
-    let withdrawal = 0;
-    if(m <= npay){ withdrawal = monthly_used; b -= monthly_used; } else { withdrawal = balloon_val; b -= balloon_val; }
-    balances.push(b); interest_arr.push(interest_earned);
-  }
-
-  let pv_monthly = 0;
-  for(let k=1;k<=npay;k++) pv_monthly += monthly_used / Math.pow(1 + r_month_real, k);
-  const pv_balloon = balloon_val / Math.pow(1 + r_month_real, npay+1);
-  const pv_total = net_dep + pv_monthly + pv_balloon;
-  const saving = P - pv_total;
-  const final_nominal = balances[balances.length-1];
-
-  return {nom,inf,taxRate,net_dep,financed_amount,monthly_used,npay,balloon_val,start_invested,real_annual,balances,interest_arr,cumulative_interest:cum_interest,pv_total,saving,after_tax_nom,final_nominal};
-}
-
+// --- refresh (display formatting changes only) ---
 function refresh(){
   const s = getState();
   nominal_val.textContent = (s.nom*100).toFixed(1) + '%';
   inflation_val.textContent = (s.inf*100).toFixed(1) + '%';
   tax_val.textContent = (s.taxRate*100).toFixed(1) + '%';
-  nominal_after_tax.textContent = ((s.after_tax_nom||0)*100).toFixed(2) + '%';
-  document.getElementById('start_inv') && (document.getElementById('start_inv').textContent = fmt(s.start_invested));
-  document.getElementById('final_bal') && (document.getElementById('final_bal').textContent = fmt(s.final_nominal));
-  document.getElementById('eff_price') && (document.getElementById('eff_price').textContent = fmt(s.pv_total));
-  document.getElementById('saving') && (document.getElementById('saving').textContent = fmt(s.saving));
-  document.getElementById('cum_interest') && (document.getElementById('cum_interest').textContent = fmt(s.cumulative_interest));
-  document.getElementById('real_rate') && (document.getElementById('real_rate').textContent = (s.real_annual*100).toFixed(4) + '%');
-  document.getElementById('monthly_used') && (document.getElementById('monthly_used').textContent = fmt(s.monthly_used));
-  document.getElementById('financed_amount') && (document.getElementById('financed_amount').textContent = fmt(s.financed_amount));
+  nominal_after_tax.textContent = (s.after_tax_nom*100).toFixed(2) + '%';
+
+  start_inv_el.textContent = fmt(s.start_invested);
+  final_bal_el.textContent = fmt(s.final_nominal);
+  eff_price_el.textContent = fmt(s.pv_total);
+  saving_el.textContent = fmt(s.saving);
+  cum_interest_el.textContent = fmt(s.cumulative_interest);
+  real_rate_el.textContent = (s.real_annual*100).toFixed(4) + '%';
+  monthly_used_el.textContent = fmt(s.monthly_used);
+  financed_amount_el.textContent = fmt(s.financed_amount);
+
+  drawChart(s.balances);
   document.querySelectorAll('input[type=range]').forEach(r=> updateRangeVisual(r));
   return s;
 }
 
-// wire up events
-const uiInputs = [nominal, inflation, tax, document.getElementById('tax_on_real'), document.getElementById('loan_apr'), document.getElementById('use_loan_apr'), document.getElementById('pay_balloon'), price, cust_dep, tesla_contrib, monthly, nmonthly, balloon];
-uiInputs.forEach(i=> i && i.addEventListener('input', refresh));
-document.getElementById('downloadBtn') && document.getElementById('downloadBtn').addEventListener('click', ()=>{
-  const html = '<!doctype html>\n' + document.documentElement.outerHTML;
-  const blob = new Blob([html], {type:'text/html'});
+// chart (unchanged)
+function drawChart(data){
+  const W = canvas.width = Math.min(960, Math.max(360, document.body.clientWidth * 0.65));
+  const H = canvas.height = 320;
+  ctx.clearRect(0,0,W,H);
+  const m = {l:56,r:20,t:24,b:44};
+  const innerW = W - m.l - m.r, innerH = H - m.t - m.b;
+  const maxVal = Math.max(...data), minVal = Math.min(...data);
+  const pad = Math.max(200, (maxVal - minVal) * 0.06);
+  const yMax = maxVal + pad, yMin = Math.max(0, minVal - pad);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.02)'; ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for(let i=0;i<=4;i++){
+    const y = m.t + i*(innerH/4);
+    ctx.beginPath(); ctx.moveTo(m.l,y); ctx.lineTo(W-m.r,y); ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath();
+  ctx.moveTo(m.l,m.t); ctx.lineTo(m.l,H-m.b); ctx.moveTo(m.l,H-m.b); ctx.lineTo(W-m.r,H-m.b); ctx.stroke();
+
+  ctx.fillStyle = '#9aa4b2'; ctx.font = '12px system-ui, Arial';
+  for(let i=0;i<=4;i++){
+    const y = m.t + i*(innerH/4);
+    const val = Math.round(yMax - i*((yMax-yMin)/4));
+    ctx.fillText('£' + val.toLocaleString(), 8, y+4);
+  }
+
+  const N = data.length;
+  const step = Math.max(1, Math.round(N/8));
+  ctx.textAlign = 'center'; ctx.fillStyle = '#9aa4b2';
+  for(let i=0;i<N;i+=step){
+    const x = m.l + (i/(N-1))*innerW;
+    ctx.fillText(String(i), x, H-12);
+  }
+
+  ctx.beginPath();
+  for(let i=0;i<N;i++){
+    const x = m.l + (i/(N-1))*innerW;
+    const y = m.t + (1 - (data[i]-yMin)/(yMax-yMin))*innerH;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#00d1b2'; ctx.lineWidth = 2.6; ctx.stroke();
+
+  ctx.lineTo(m.l+innerW, H-m.b); ctx.lineTo(m.l, H-m.b); ctx.closePath();
+  ctx.fillStyle = 'rgba(0,209,178,0.08)'; ctx.fill();
+
+  const lastX = m.l + innerW;
+  const lastY = m.t + (1 - (data[N-1]-yMin)/(yMax-yMin))*innerH;
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(lastX,lastY,4,0,Math.PI*2); ctx.fill();
+  ctx.font = '12px system-ui, Arial'; ctx.fillText('£' + Math.round(data[N-1]).toLocaleString(), lastX-68, lastY-10);
+}
+
+// exports & copy (unchanged)
+function exportSummaryCSV(state){
+  const rows = [
+    ['Parameter','Value'],
+    ['Price', parseFloat(state.P).toFixed(2)],
+    ['Customer deposit', parseFloat(state.cust).toFixed(2)],
+    ['Dealer contribution', parseFloat(state.tcont).toFixed(2)],
+    ['Net deposit (you pay)', parseFloat(state.net_dep).toFixed(2)],
+    ['Financed amount (price - customer deposit)', parseFloat(state.financed_amount).toFixed(2)],
+    ['Monthly payment used', parseFloat(state.monthly_used).toFixed(2)],
+    ['Monthly payments (count)', state.npay],
+    ['Balloon (paid at end?)', parseFloat(state.ball).toFixed(2)],
+    ['Loan APR (%)', (state.loan_apr*100).toFixed(2)],
+    ['Use loan APR to compute payments', state.use_loan_apr],
+    ['Nominal return (annual %)', (state.nom*100).toFixed(2)],
+    ['Tax on real returns?', state.tax_on_real],
+    ['Tax rate (%)', (state.taxRate*100).toFixed(2)],
+    ['Inflation (annual %)', (state.inf*100).toFixed(2)],
+    ['Real discount rate (annual %)', (state.real_annual*100).toFixed(4)],
+    ['Start invested (nominal)', parseFloat(state.start_invested).toFixed(2)],
+    ['Final nominal leftover', parseFloat(state.final_nominal).toFixed(2)],
+    ['Effective price today (PV)', parseFloat(state.pv_total).toFixed(2)],
+    ['Saving vs paying cash today', parseFloat(state.saving).toFixed(2)],
+    ['Cumulative interest earned (nominal)', parseFloat(state.cumulative_interest).toFixed(2)]
+  ];
+  let csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  triggerDownload(csv, 'pcp_playground_summary_v7.csv', 'text/csv');
+}
+
+function exportMonthlyCSV(state){
+  const header = ['month','start_balance','interest_earned','withdrawal','end_balance','cumulative_interest'];
+  const lines = [header.join(',')];
+  let cum = 0;
+  for(let i=0;i<state.balances.length-1;i++){
+    const start = state.balances[i];
+    const interest = state.interest_arr[i+1];
+    cum += interest;
+    let withdrawal = 0;
+    if(i+1 <= state.npay) withdrawal = state.monthly_used; else withdrawal = state.ball;
+    lines.push([i, (Math.round(start*100)/100).toFixed(02), (Math.round(interest*100)/100).toFixed(02), (Math.round(withdrawal*100)/100).toFixed(02), (Math.round(state.balances[i+1]*100)/100).toFixed(02), (Math.round(cum*100)/100).toFixed(02)].join(','));
+  }
+  const csv = lines.join('\n');
+  triggerDownload(csv, 'pcp_playground_monthly_v7.csv', 'text/csv');
+}
+
+function triggerDownload(content, filename, mime){
+  const blob = new Blob([content],{type:mime});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'pcp_playground_v6.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+function copySummaryToClipboard(state){
+  const lines = [
+    `PCP & Financing Playground — Summary`,
+    `Price: £${parseFloat(state.P).toFixed(2)}`,
+    `Customer deposit: £${parseFloat(state.cust).toFixed(2)}`,
+    `Dealer contribution: £${parseFloat(state.tcont).toFixed(2)}`,
+    `Net deposit (you): £${parseFloat(state.net_dep).toFixed(2)}`,
+    `Financed amount: £${parseFloat(state.financed_amount).toFixed(2)}`,
+    `Monthly payment used: £${parseFloat(state.monthly_used).toFixed(2)}`,
+    `Months: ${state.npay}`,
+    `Balloon (paid): £${parseFloat(state.ball).toFixed(02)}`,
+    `Loan APR: ${(state.loan_apr*100).toFixed(02)}%`,
+    `Use loan APR: ${state.use_loan_apr}`,
+    `Investment return: ${(state.nom*100).toFixed(2)}%`,
+    `Tax on real returns? ${state.tax_on_real}`,
+    `Tax rate: ${(state.taxRate*100).toFixed(2)}%`,
+    `Inflation: ${(state.inf*100).toFixed(2)}%`,
+    `Real discount rate: ${(state.real_annual*100).toFixed(4)}%`,
+    `Start invested: £${parseFloat(state.start_invested).toFixed(2)}`,
+    `Final nominal leftover: £${parseFloat(state.final_nominal).toFixed(2)}`,
+    `Effective price today (PV): £${parseFloat(state.pv_total).toFixed(2)}`,
+    `Saving vs cash: £${parseFloat(state.saving).toFixed(2)}`,
+    `Cumulative interest earned: £${parseFloat(state.cumulative_interest).toFixed(2)}`
+  ].join('\n');
+  navigator.clipboard.writeText(lines).then(()=>{
+    copystatus.textContent = 'Copied ✓'; copystatus.className = 'copyok';
+    setTimeout(()=>{copystatus.textContent=''; copystatus.className='';},1800);
+  }, ()=>{ copystatus.textContent = 'Copy failed'; });
+}
+
+// wire up UI events
+const uiInputs = [nominal, inflation, tax, tax_on_real_cb, loan_apr_el, use_loan_apr_cb, pay_balloon_cb, price, cust_dep, tesla_contrib, monthly, nmonthly, balloon];
+uiInputs.forEach(i=>i.addEventListener('input', refresh));
+
+downloadBtn.addEventListener('click', ()=>{
+  const htmlContent = '<!doctype html>\\n' + document.documentElement.outerHTML;
+  const blob = new Blob([htmlContent], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'pcp_financing_playground_v7.html'; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
 });
 
-// init
+document.getElementById('exportCsvBtn').addEventListener('click', ()=>{ const s = getState(); exportSummaryCSV(s); });
+document.getElementById('exportMonthlyCsvBtn').addEventListener('click', ()=>{ const s = getState(); exportMonthlyCSV(s); });
+document.getElementById('exportSummaryBtn').addEventListener('click', ()=>{ const s = getState(); exportSummaryCSV(s); });
+document.getElementById('exportMonthlyBtn').addEventListener('click', ()=>{ const s = getState(); exportMonthlyCSV(s); });
+document.getElementById('copyBtn').addEventListener('click', ()=>{ const s = getState(); copySummaryToClipboard(s); });
+
+// modal behavior
+helpBtn.addEventListener('click', ()=>{ modalBackdrop.style.display='flex'; modalBackdrop.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden'; });
+modalClose.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
+modalClose2.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
+modalBackdrop.addEventListener('click',(e)=>{ if(e.target === modalBackdrop){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; } });
+
+// initial setup
+ensureRangeMeta();
 initRangeUI();
 refresh();
+</script>
+
+<!-- Quick patch to further harden mobile tooltips & ensure label rename works everywhere -->
+<script>
+(function(){
+  // ensure label rename in case the file was edited elsewhere
+  const nomLabel = document.querySelector('label[for="nominal"]');
+  if(nomLabel) nomLabel.textContent = 'Investment return';
+
+  // add extra touch handlers for mobile (some Android browsers need touchend vs touchstart)
+  const targets = [
+    'label[for="nominal"]', '#nominal_val',
+    'label[for="inflation"]', '#inflation_val',
+    'label[for="tax"]', '#tax_val'
+  ];
+  function safeShow(el){
+    if(!el) return;
+    if(typeof showTooltipForElement === 'function'){
+      try{ showTooltipForElement(el); }catch(e){ /* ignore */ }
+    } else {
+      el.click && el.click();
+    }
+  }
+  targets.forEach(sel=>{
+    const el = document.querySelector(sel);
+    if(!el) return;
+    if(!el.__tooltip_touch_added){
+      el.addEventListener('touchend', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); }, {passive:true});
+      el.addEventListener('touchstart', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); }, {passive:true});
+      el.addEventListener('click', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); });
+      el.__tooltip_touch_added = true;
+    }
+  });
+})();
 </script>
 </body>
 </html>
