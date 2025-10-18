@@ -22,7 +22,9 @@ h1{margin:0;font-size:18px}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .col{flex:1 1 240px;min-width:200px;position:relative}
 .control-box{padding:12px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03)}
-.label-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.label-row{display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative}
+/* ensure labels leave room for the small info button when it's present */
+.label-row.touch-has-info label{padding-right:36px}
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;cursor:pointer}
 input[type=range]{width:100%; -webkit-appearance:none; appearance:none; height:40px; background:transparent; margin:0; padding:0; touch-action:pan-x;}
 
@@ -78,6 +80,39 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   background:#02121a; left:50%; margin-left:-5px; top:-5px;
 }
 
+/* info button: visually small, large touch target, absolutely positioned so it doesn't affect layout */
+.info-btn{
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;
+  background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:0; z-index:12;
+  -webkit-tap-highlight-color: transparent;
+  border-radius:6px;
+}
+/* increase the tap target without growing visual size */
+.info-btn::before{ content:''; position:absolute; inset:-6px; border-radius:10px; }
+
+/* hide info buttons on pointer devices that support hover (desktop) */
+@media (hover: hover) and (pointer: fine) {
+  .info-btn{ display:none; }
+}
+
+/* mobile-friendly info button states */
+.info-btn:focus, .info-btn:hover{ color:#fff; outline:none; background:rgba(255,255,255,0.02) }
+
+/* mobile-friendly sheet */
+.mobile-tooltip-sheet{
+  position:fixed; left:8px; right:8px; bottom:-120%; background:#02121a;color:#cfeee3;padding:14px;border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  transition:bottom .22s cubic-bezier(.2,.9,.2,1), opacity .18s ease; z-index:30000; max-height:56vh; overflow:auto; opacity:0;
+}
+.mobile-tooltip-sheet.visible{ bottom:12px; opacity:1; }
+.mobile-tooltip-sheet.fullscreen{
+  left:0; right:0; top:0; bottom:0; height:100vh; border-radius:0; padding: calc(14px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-left)) calc(14px + env(safe-area-inset-bottom));
+  max-height: none; overflow:auto;
+}
+.mobile-tooltip-sheet .sheet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.mobile-tooltip-sheet .sheet-title{font-weight:700}
+.mobile-tooltip-sheet .sheet-close{background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:6px}
+
 /* modal overlay must be on top */
 .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,11,0.6);display:none;align-items:center;justify-content:center;z-index:20000}
 .modal{background:#071122;border-radius:12px;padding:18px;max-width:720px;color:#e6eef6;box-shadow:0 12px 40px rgba(0,0,0,0.6);max-height:90vh;overflow:auto}
@@ -110,6 +145,9 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   .tooltip{max-width:90%; font-size:13px}
   /* make bubbles visible by default on small screens for clarity */
   .range-bubble{display:block}
+  /* ensure info button slightly larger on very small screens for tap */
+  .info-btn{ width:34px; height:34px; right:8px; font-size:16px }
+  .label-row.touch-has-info label{padding-right:44px}
 }
 </style>
 </head>
@@ -220,13 +258,13 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   </div>
 
   <div class="outputs" style="margin-top:10px">
-    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate" data-tip="Annual real discount rate used to discount future payments (investment return after tax, adjusted for inflation).">—</div></div>
-    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv" data-tip="The nominal amount you would have invested at the start if you don't pay cash (price minus net deposit).">—</div></div>
-    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal" data-tip="Nominal balance remaining in the investment at the end of the term after monthly withdrawals and balloon (if paid).">—</div></div>
-    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price" data-tip="Present value (PV) of your payments: net deposit + discounted monthly payments + discounted balloon using the real discount rate.">—</div></div>
-    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving" data-tip="Difference between paying cash today and the effective price. Positive means financing saves you money compared with paying cash.">—</div></div>
-    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest" data-tip="Total nominal interest earned on the invested funds across the whole term (not inflation-adjusted).">—</div></div>
-    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used" data-tip="Monthly payment used in the model (either your input or computed from Loan APR if selected).">—</div></div>
+    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate" data-tip="Annual real discount rate used to discount future payments (investment return after tax, ad..."></div></div>
+    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv" data-tip="The nominal amount you would have invested at the start if you don't pay cash (price minus net...)"></div></div>
+    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal" data-tip="Nominal balance remaining in the investment at the end of the term after monthly wit..."></div></div>
+    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price" data-tip="Present value (PV) of your payments: net deposit + discounted monthly payments + disc..."></div></div>
+    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving" data-tip="Difference between paying cash today and the effective price. Positive means financing saves y..."></div></div>
+    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest" data-tip="Total nominal interest earned on the invested funds across the whole term (not ..."></div></div>
+    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used" data-tip="Monthly payment used in the model (either your input or computed from Loan APR if selected)."></div></div>
     <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount" data-tip="Amount financed by the lender (price minus customer deposit).">—</div></div>
   </div>
 
@@ -260,13 +298,16 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 
+<!-- mobile sheet for touch tooltips -->
+<div id="mobileTooltip" class="mobile-tooltip-sheet" role="dialog" aria-modal="false" aria-hidden="true"></div>
+
 <!-- help modal (moved after tooltip to ensure overlay) -->
 <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <button class="close-x" id="modalClose" title="Close">✕</button>
     <h2 id="helpTitle">Help & FAQ</h2>
     <h3>What does this do?</h3>
-    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return after tax adjusted for inflation) and shows the PV of your payment stream so you can compare the effective cost.</p>
+    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return a...)</p>
     <h3>Tooltips</h3>
     <p>Tap the ℹ️ icon, the label, or the numeric value next to a control to open a tooltip. The tooltip will remain open until you tap anywhere outside it. Press <kbd>Esc</kbd> to dismiss on keyboard.</p>
     <h3>Loan APR vs monthly</h3>
@@ -288,6 +329,7 @@ const csvEscape = s => (typeof s === 'number'? s : '"' + String(s).replace(/"/g,
 // elements
 const container = document.getElementById('app');
 const tooltip = document.getElementById('tooltip');
+const mobileTooltip = document.getElementById('mobileTooltip');
 const helpBtn = document.getElementById('helpBtn');
 const modalBackdrop = document.getElementById('modalBackdrop');
 const modalClose = document.getElementById('modalClose');
@@ -317,6 +359,8 @@ const canvas = document.getElementById('chart'); const ctx = canvas.getContext('
 
 // --- Tooltip improvements ---
 let activeTipEl = null;
+
+// compute position for floating tooltip (desktop)
 function computeTooltipPosition(el){
   const rect = el.getBoundingClientRect();
   const crect = container.getBoundingClientRect();
@@ -376,10 +420,11 @@ function repositionTooltip(){
 }
 
 function hideTooltip(){
-  if(!tooltip.classList.contains('visible')) return;
-  tooltip.classList.remove('visible');
-  tooltip.setAttribute('aria-hidden','true');
-  if(activeTipEl){
+  if(tooltip.classList.contains('visible')){
+    tooltip.classList.remove('visible');
+    tooltip.setAttribute('aria-hidden','true');
+  }
+  if(!mobileTooltip.classList.contains('visible') && activeTipEl){
     const containerPrev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
     if(containerPrev) containerPrev.classList.remove('active-tip');
     activeTipEl = null;
@@ -388,21 +433,132 @@ function hideTooltip(){
   window.removeEventListener('resize', repositionTooltip);
   window.removeEventListener('scroll', repositionTooltip, true);
 }
-function escHandler(e){ if(e.key === 'Escape' || e.key === 'Esc') hideTooltip(); }
+function escHandler(e){ if(e.key === 'Escape' || e.key === 'Esc') { hideTooltip(); hideMobileTooltip(); } }
+
+// Show mobile tooltip (bottom-sheet / fullscreen on small screens)
+function showMobileTooltipForElement(el){
+  if(!el) return;
+  const tip = el.getAttribute('data-tip');
+  if(!tip) return;
+
+  // mark label-row to add padding so button doesn't collide with text
+  const lr = el.closest('.label-row');
+  if(lr) lr.classList.add('touch-has-info');
+
+  // highlight element container
+  const containerEl = el.closest('.col') || el.closest('label') || el;
+  document.querySelectorAll('.active-tip').forEach(node => node.classList.remove('active-tip'));
+  if(containerEl) containerEl.classList.add('active-tip');
+
+  // Build sheet content
+  mobileTooltip.innerHTML = '';
+  const header = document.createElement('div'); header.className = 'sheet-header';
+  const title = document.createElement('div'); title.className = 'sheet-title';
+  title.textContent = el.getAttribute('aria-label') || (el.textContent || '').trim().slice(0,80) || 'Info';
+  const closeBtn = document.createElement('button'); closeBtn.className = 'sheet-close'; closeBtn.innerHTML = '✕';
+  closeBtn.addEventListener('click', hideMobileTooltip);
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+
+  const body = document.createElement('div'); body.className = 'sheet-body';
+  body.innerHTML = '<div style="font-size:13px;line-height:1.35;color:#cfeee3">' + escapeHtml(tip) + '</div>';
+
+  mobileTooltip.appendChild(header);
+  mobileTooltip.appendChild(body);
+
+  // decide whether to use fullscreen (very small screens)
+  const useFullscreen = window.matchMedia('(max-width:420px)').matches;
+  mobileTooltip.classList.toggle('fullscreen', useFullscreen);
+
+  // show
+  mobileTooltip.classList.add('visible');
+  mobileTooltip.setAttribute('aria-hidden','false');
+
+  // if fullscreen, block background scroll and set aria-modal
+  if(useFullscreen){
+    mobileTooltip.setAttribute('aria-modal','true');
+    document.body.style.overflow = 'hidden';
+  } else {
+    mobileTooltip.setAttribute('aria-modal','false');
+  }
+
+  // focus close for accessibility
+  closeBtn.focus();
+
+  // hide floating tooltip if visible
+  hideTooltip();
+
+  document.addEventListener('keydown', escHandler);
+
+  // record opener so we can restore focus later
+  mobileTooltip._opener = el;
+}
+
+function hideMobileTooltip(){
+  if(mobileTooltip.classList.contains('visible')){
+    mobileTooltip.classList.remove('visible');
+    mobileTooltip.setAttribute('aria-hidden','true');
+    // remove highlight from columns
+    document.querySelectorAll('.active-tip').forEach(node => node.classList.remove('active-tip'));
+    // remove added padding marker (keep it harmless)
+    document.querySelectorAll('.label-row.touch-has-info').forEach(node => node.classList.remove('touch-has-info'));
+    // if it was fullscreen, restore body scroll
+    if(mobileTooltip.classList.contains('fullscreen')){
+      document.body.style.overflow = '';
+    }
+    mobileTooltip.classList.remove('fullscreen');
+    document.removeEventListener('keydown', escHandler);
+    // restore focus to opener
+    try{ if(mobileTooltip._opener && typeof mobileTooltip._opener.focus === 'function') mobileTooltip._opener.focus(); }catch(e){}
+    mobileTooltip._opener = null;
+  }
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
 
 // attach tooltip handlers (click + hover + touchend)
 // also ensure labels/values reliably open the tooltip even when they focus inputs
 (function attachTooltipHandlers(){
   const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+  // For touch devices we will create an info button per label-row (not per [data-tip] node)
+  // and show the bottom sheet. We take care to only insert one button per label-row and
+  // to avoid affecting layout by absolutely positioning the button.
   document.querySelectorAll('[data-tip]').forEach(el=>{
-    // For touch devices use touchend so taps consistently toggle tooltips (avoids race with document touchstart)
     if(isTouch){
-      // use passive:false so we can call preventDefault() to avoid synthetic mouse events in some browsers
-      el.addEventListener('touchend', (ev)=>{ ev.preventDefault && ev.preventDefault(); ev.stopPropagation(); toggleTooltipForElement(el); }, {passive:false});
-      // also allow click fallback (some browsers still fire click)
-      el.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleTooltipForElement(el); });
+      // Find the label-row that should carry the button. Prefer .label-row if present.
+      const lr = el.closest('.label-row') || el.closest('.value') || el.closest('.col');
+      if(lr && !lr.__info_btn_added){
+        // If an info button already exists inside lr, skip
+        if(lr.querySelector('.info-btn')){ lr.__info_btn_added = true; return; }
+        const btn = document.createElement('button');
+        btn.className = 'info-btn';
+        btn.setAttribute('aria-haspopup','dialog');
+        btn.setAttribute('aria-label','More information');
+        btn.innerHTML = 'ℹ️';
+        // clicking the button opens the mobile sheet for the first [data-tip] inside that row
+        btn.addEventListener('click', (ev)=>{
+          ev.stopPropagation(); ev.preventDefault();
+          // prefer exact element we want: if lr contains a label with data-tip, use that; else use el
+          const preferred = lr.querySelector('[data-tip]') || el;
+          showMobileTooltipForElement(preferred);
+        });
+        btn.addEventListener('touchend', (ev)=>{ ev.stopPropagation(); ev.preventDefault(); const preferred = lr.querySelector('[data-tip]') || el; showMobileTooltipForElement(preferred); }, {passive:false});
+        // Ensure the label-row gets the class so label text leaves space for the absolutely positioned button
+        lr.classList.add('touch-has-info');
+        // Make sure we don't push layout around by appending the button inside lr (absolutely positioned)
+        lr.appendChild(btn);
+        lr.__info_btn_added = true;
+      }
+      // Also make the element itself open the mobile sheet on touch/click (useful for value spans)
+      if(!el.__touch_click_added){
+        el.addEventListener('touchend', (ev)=>{ ev.stopPropagation(); ev.preventDefault(); showMobileTooltipForElement(el); }, {passive:false});
+        el.addEventListener('click', (ev)=>{ ev.stopPropagation(); ev.preventDefault(); showMobileTooltipForElement(el); });
+        el.__touch_click_added = true;
+      }
     } else {
-      // mouse/keyboard interactions
+      // mouse/keyboard interactions: use floating tooltip
       el.addEventListener('click', (ev)=>{ ev.stopPropagation(); showTooltipForElement(el); });
       if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
         el.addEventListener('mouseenter', ()=> showTooltipForElement(el));
@@ -414,15 +570,20 @@ function escHandler(e){ if(e.key === 'Escape' || e.key === 'Esc') hideTooltip();
 
 // hide tooltip when clicking/tapping outside tooltip and data-tip elements
 document.addEventListener('click', (e)=>{
+  // If mobile sheet is visible and click is inside it, ignore
+  if(mobileTooltip.classList.contains('visible') && mobileTooltip.contains(e.target)) return;
   if(e.target.closest('[data-tip]')) return;
   if(e.target.closest('#tooltip')) return;
   hideTooltip();
+  hideMobileTooltip();
 });
-// Keep the existing touchstart outside handler — it will check if the initial touch target is a data-tip element.
+// touchstart outside handler: keep it passive to avoid jank but early-return if sheet is interacting
 document.addEventListener('touchstart', (e)=>{
+  if(mobileTooltip.classList.contains('visible') && (mobileTooltip.contains(e.target) || e.target.closest('.info-btn'))) return;
   if(e.target.closest('[data-tip]')) return;
   if(e.target.closest('#tooltip')) return;
   hideTooltip();
+  hideMobileTooltip();
 }, {passive:true});
 
 // fix: inputs focus sometimes fires before click handler on labels (race). Delay hide check slightly.
@@ -727,7 +888,7 @@ function copySummaryToClipboard(state){
     `Dealer contribution: £${parseFloat(state.tcont).toFixed(2)}`,
     `Net deposit (you): £${parseFloat(state.net_dep).toFixed(2)}`,
     `Financed amount: £${parseFloat(state.financed_amount).toFixed(2)}`,
-    `Monthly payment used: £${parseFloat(state.monthly_used).toFixed(2)}`,
+    `Monthly payment used: ��${parseFloat(state.monthly_used).toFixed(2)}`,
     `Months: ${state.npay}`,
     `Balloon (paid): £${parseFloat(state.ball).toFixed(2)}`,
     `Loan APR: ${(state.loan_apr*100).toFixed(2)}%`,
@@ -779,39 +940,11 @@ initRangeUI();
 refresh();
 </script>
 
-<!-- Quick patch to further harden mobile tooltips & ensure label rename works everywhere -->
+<!-- Quick patch: ensure label rename but DO NOT add info buttons here (handled above) -->
 <script>
 (function(){
-  // ensure label rename in case the file was edited elsewhere
   const nomLabel = document.querySelector('label[for="nominal"]');
   if(nomLabel) nomLabel.textContent = 'Investment return';
-
-  // add extra touch handlers for mobile (some Android browsers need touchend vs touchstart)
-  const targets = [
-    'label[for="nominal"]', '#nominal_val',
-    'label[for="inflation"]', '#inflation_val',
-    'label[for="tax"]', '#tax_val'
-  ];
-  function safeShow(el){
-    if(!el) return;
-    if(typeof toggleTooltipForElement === 'function'){
-      try{ toggleTooltipForElement(el); }catch(e){ /* ignore */ }
-    } else if (typeof showTooltipForElement === 'function') {
-      try{ showTooltipForElement(el); }catch(e){ /* ignore */ }
-    } else {
-      el.click && el.click();
-    }
-  }
-  targets.forEach(sel=>{
-    const el = document.querySelector(sel);
-    if(!el) return;
-    if(!el.__tooltip_touch_added){
-      el.addEventListener('touchend', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); }, {passive:false});
-      el.addEventListener('touchstart', function(ev){ ev.stopPropagation && ev.stopPropagation(); /* keep to prevent early hide on some devices */ }, {passive:true});
-      el.addEventListener('click', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); });
-      el.__tooltip_touch_added = true;
-    }
-  });
 })();
 </script>
 </body>
