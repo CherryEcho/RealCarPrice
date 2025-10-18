@@ -220,14 +220,14 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   </div>
 
   <div class="outputs" style="margin-top:10px">
-    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate">—</div></div>
-    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv">—</div></div>
-    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal">—</div></div>
-    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price">—</div></div>
-    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving">—</div></div>
-    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest">—</div></div>
-    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used">—</div></div>
-    <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount">—</div></div>
+    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate" data-tip="Annual real discount rate used to discount future payments (investment return after tax, adjusted for inflation).">—</div></div>
+    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv" data-tip="The nominal amount you would have invested at the start if you don't pay cash (price minus net deposit).">—</div></div>
+    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal" data-tip="Nominal balance remaining in the investment at the end of the term after monthly withdrawals and balloon (if paid).">—</div></div>
+    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price" data-tip="Present value (PV) of your payments: net deposit + discounted monthly payments + discounted balloon using the real discount rate.">—</div></div>
+    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving" data-tip="Difference between paying cash today and the effective price. Positive means financing saves you money compared with paying cash.">—</div></div>
+    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest" data-tip="Total nominal interest earned on the invested funds across the whole term (not inflation-adjusted).">—</div></div>
+    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used" data-tip="Monthly payment used in the model (either your input or computed from Loan APR if selected).">—</div></div>
+    <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount" data-tip="Amount financed by the lender (price minus customer deposit).">—</div></div>
   </div>
 
   <div class="grid-3" style="margin-top:10px">
@@ -266,7 +266,7 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
     <button class="close-x" id="modalClose" title="Close">✕</button>
     <h2 id="helpTitle">Help & FAQ</h2>
     <h3>What does this do?</h3>
-    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return after tax minus inflation).</p>
+    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return after tax adjusted for inflation) and shows the PV of your payment stream so you can compare the effective cost.</p>
     <h3>Tooltips</h3>
     <p>Tap the ℹ️ icon, the label, or the numeric value next to a control to open a tooltip. The tooltip will remain open until you tap anywhere outside it. Press <kbd>Esc</kbd> to dismiss on keyboard.</p>
     <h3>Loan APR vs monthly</h3>
@@ -337,6 +337,7 @@ function showTooltipForElement(el){
   const tip = el.getAttribute('data-tip');
   if(!tip) return;
   if(activeTipEl === el){
+    // clicking again toggles (hide)
     hideTooltip();
     return;
   }
@@ -363,6 +364,10 @@ function showTooltipForElement(el){
   window.addEventListener('scroll', repositionTooltip, true);
 }
 
+function toggleTooltipForElement(el){
+  if(activeTipEl === el) hideTooltip(); else showTooltipForElement(el);
+}
+
 function repositionTooltip(){
   if(!activeTipEl) return;
   const pos = computeTooltipPosition(activeTipEl);
@@ -385,17 +390,27 @@ function hideTooltip(){
 }
 function escHandler(e){ if(e.key === 'Escape' || e.key === 'Esc') hideTooltip(); }
 
-// attach tooltip handlers (click + hover + touchstart)
+// attach tooltip handlers (click + hover + touchend)
 // also ensure labels/values reliably open the tooltip even when they focus inputs
-document.querySelectorAll('[data-tip]').forEach(el=>{
-  // touchstart helps mobile show tooltip before focus/scroll occurs
-  el.addEventListener('touchstart', (ev)=>{ ev.stopPropagation(); showTooltipForElement(el); }, {passive:true});
-  el.addEventListener('click', (ev)=>{ ev.stopPropagation(); showTooltipForElement(el); });
-  if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
-    el.addEventListener('mouseenter', ()=> showTooltipForElement(el));
-    el.addEventListener('mouseleave', ()=> hideTooltip());
-  }
-});
+(function attachTooltipHandlers(){
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+  document.querySelectorAll('[data-tip]').forEach(el=>{
+    // For touch devices use touchend so taps consistently toggle tooltips (avoids race with document touchstart)
+    if(isTouch){
+      // use passive:false so we can call preventDefault() to avoid synthetic mouse events in some browsers
+      el.addEventListener('touchend', (ev)=>{ ev.preventDefault && ev.preventDefault(); ev.stopPropagation(); toggleTooltipForElement(el); }, {passive:false});
+      // also allow click fallback (some browsers still fire click)
+      el.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleTooltipForElement(el); });
+    } else {
+      // mouse/keyboard interactions
+      el.addEventListener('click', (ev)=>{ ev.stopPropagation(); showTooltipForElement(el); });
+      if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
+        el.addEventListener('mouseenter', ()=> showTooltipForElement(el));
+        el.addEventListener('mouseleave', ()=> hideTooltip());
+      }
+    }
+  });
+})();
 
 // hide tooltip when clicking/tapping outside tooltip and data-tip elements
 document.addEventListener('click', (e)=>{
@@ -403,6 +418,7 @@ document.addEventListener('click', (e)=>{
   if(e.target.closest('#tooltip')) return;
   hideTooltip();
 });
+// Keep the existing touchstart outside handler — it will check if the initial touch target is a data-tip element.
 document.addEventListener('touchstart', (e)=>{
   if(e.target.closest('[data-tip]')) return;
   if(e.target.closest('#tooltip')) return;
@@ -690,7 +706,7 @@ function exportMonthlyCSV(state){
     cum += interest;
     let withdrawal = 0;
     if(i+1 <= state.npay) withdrawal = state.monthly_used; else withdrawal = state.ball;
-    lines.push([i, (Math.round(start*100)/100).toFixed(02), (Math.round(interest*100)/100).toFixed(02), (Math.round(withdrawal*100)/100).toFixed(02), (Math.round(state.balances[i+1]*100)/100).toFixed(02), (Math.round(cum*100)/100).toFixed(02)].join(','));
+    lines.push([i, (Math.round(start*100)/100).toFixed(2), (Math.round(interest*100)/100).toFixed(2), (Math.round(withdrawal*100)/100).toFixed(2), (Math.round(state.balances[i+1]*100)/100).toFixed(2), (Math.round(cum*100)/100).toFixed(2)].join(','));
   }
   const csv = lines.join('\n');
   triggerDownload(csv, 'pcp_playground_monthly_v7.csv', 'text/csv');
@@ -713,8 +729,8 @@ function copySummaryToClipboard(state){
     `Financed amount: £${parseFloat(state.financed_amount).toFixed(2)}`,
     `Monthly payment used: £${parseFloat(state.monthly_used).toFixed(2)}`,
     `Months: ${state.npay}`,
-    `Balloon (paid): £${parseFloat(state.ball).toFixed(02)}`,
-    `Loan APR: ${(state.loan_apr*100).toFixed(02)}%`,
+    `Balloon (paid): £${parseFloat(state.ball).toFixed(2)}`,
+    `Loan APR: ${(state.loan_apr*100).toFixed(2)}%`,
     `Use loan APR: ${state.use_loan_apr}`,
     `Investment return: ${(state.nom*100).toFixed(2)}%`,
     `Tax on real returns? ${state.tax_on_real}`,
@@ -755,7 +771,7 @@ document.getElementById('copyBtn').addEventListener('click', ()=>{ const s = get
 helpBtn.addEventListener('click', ()=>{ modalBackdrop.style.display='flex'; modalBackdrop.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden'; });
 modalClose.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
 modalClose2.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
-modalBackdrop.addEventListener('click',(e)=>{ if(e.target === modalBackdrop){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; } });
+modalBackdrop.addEventListener('click',(e)=>{ if(e.target === modalBackdrop){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; }});
 
 // initial setup
 ensureRangeMeta();
@@ -778,7 +794,9 @@ refresh();
   ];
   function safeShow(el){
     if(!el) return;
-    if(typeof showTooltipForElement === 'function'){
+    if(typeof toggleTooltipForElement === 'function'){
+      try{ toggleTooltipForElement(el); }catch(e){ /* ignore */ }
+    } else if (typeof showTooltipForElement === 'function') {
       try{ showTooltipForElement(el); }catch(e){ /* ignore */ }
     } else {
       el.click && el.click();
@@ -788,8 +806,8 @@ refresh();
     const el = document.querySelector(sel);
     if(!el) return;
     if(!el.__tooltip_touch_added){
-      el.addEventListener('touchend', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); }, {passive:true});
-      el.addEventListener('touchstart', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); }, {passive:true});
+      el.addEventListener('touchend', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); }, {passive:false});
+      el.addEventListener('touchstart', function(ev){ ev.stopPropagation && ev.stopPropagation(); /* keep to prevent early hide on some devices */ }, {passive:true});
       el.addEventListener('click', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); });
       el.__tooltip_touch_added = true;
     }
