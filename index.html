@@ -3,22 +3,48 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>PCP & Financing Playground — Real Cost Calculator (v7)</title>
+<title>PCP & Financing Playground — Real Cost Calculator (v7) — Improved sliders (v4)</title>
 <style>
-:root{--bg:#0f1724;--card:#071122;--muted:#9aa4b2;--accent:#00d1b2;--glass:rgba(255,255,255,0.03);--highlight:rgba(0,209,178,0.12);color-scheme:dark}
-html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6}
-.container{max-width:1100px;margin:18px auto;padding:12px}
+:root{
+  --bg:#0f1724;--card:#071122;--muted:#9aa4b2;--accent:#00d1b2;--glass:rgba(255,255,255,0.03);
+  --highlight:rgba(0,209,178,0.12);color-scheme:dark;
+  --gap:10px; --radius:10px; --ui-padding:12px;
+}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial, sans-serif;
+  background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+.container{max-width:1100px;margin:18px auto;padding:12px; position:relative;}
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
 .header{display:flex;align-items:center;gap:12px;justify-content:space-between}
 h1{margin:0;font-size:18px}
 .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.col{flex:1 1 240px;min-width:200px}
-.control-box{padding:10px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03)}
+.col{flex:1 1 240px;min-width:200px;position:relative}
+.control-box{padding:12px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03)}
 .label-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;cursor:pointer}
-input[type=range]{width:100%}
-.value{font-size:15px;font-weight:700;color:#fff;margin-top:6px} 
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;cursor:pointer}
+input[type=range]{width:100%; -webkit-appearance:none; appearance:none; height:40px; background:transparent; margin:0; padding:0; touch-action:pan-x;}
+
+/* prettier, wider track + larger thumb for touch */
+input[type=range]::-webkit-slider-runnable-track{height:10px;background:rgba(255,255,255,0.06);border-radius:999px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:28px;width:28px;border-radius:50%;background:var(--accent);margin-top:-9px;box-shadow:0 6px 18px rgba(0,0,0,0.45);border:3px solid rgba(255,255,255,0.06)}
+input[type=range]::-moz-range-track{height:10px;background:rgba(255,255,255,0.06);border-radius:999px}
+input[type=range]::-moz-range-thumb{height:28px;width:28px;border-radius:50%;background:var(--accent);box-shadow:0 6px 18px rgba(0,0,0,0.45);border:3px solid rgba(255,255,255,0.06)}
+input[type=range]:focus { outline: none; }
+
+/* value display and bubble - no motion (user requested) */
+.value{font-size:15px;font-weight:700;color:#fff;margin-top:8px;display:flex;gap:8px;align-items:center}
+.value .muted{color:var(--muted);font-weight:600;font-size:13px}
+.range-bubble{
+  position:absolute; transform:translate(-50%, -120%); top:8px;
+  background:#02121a;color:#cfeee3;padding:6px 8px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.4);font-weight:700;font-size:13px;white-space:nowrap;pointer-events:none;
+  z-index:8;
+  display:none;
+}
+.range-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+
+/* outputs & other panels (unchanged mostly) */
 .outputs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
 .out{background:var(--glass);padding:10px;border-radius:8px}
 .out .k{font-size:12px;color:var(--muted)} .out .v{font-size:15px;font-weight:700}
@@ -26,8 +52,8 @@ input[type=range]{width:100%}
 .controls input[type=number], select{background:rgba(255,255,255,0.02);border:none;color:#fff;padding:8px;border-radius:8px;width:100%}
 .small{font-size:12px;color:var(--muted)}
 .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
-.btn{background:var(--accent);color:#052026;padding:8px 10px;border-radius:10px;font-weight:700;border:none;cursor:pointer}
-.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:7px 10px;border-radius:8px;cursor:pointer}
+.btn{background:var(--accent);color:#052026;padding:8px 10px;border-radius:10px;font-weight:700;border:none;cursor:pointer; touch-action:manipulation}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:7px 10px;border-radius:8px;cursor:pointer; touch-action:manipulation}
 canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
 .footer{margin-top:10px;color:var(--muted);font-size:12px}
 .inline{display:flex;gap:8px;align-items:center}
@@ -36,9 +62,18 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
 .info{display:inline-block;margin-left:6px;color:var(--muted);cursor:pointer}
 .toggle{display:inline-flex;align-items:center;gap:8px;margin-top:6px}
 
-/* Tooltip styles: gentle 0.5s fade-in/out */
-.tooltip{position:fixed;background:#02121a;color:#cfeee3;padding:12px;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.6);max-width:340px;font-size:13px;z-index:9000;line-height:1.35;opacity:0;transform:translateY(6px);transition:opacity .5s ease, transform .5s ease;pointer-events:none}
+/* Tooltip */
+.tooltip{
+  position:absolute; background:#02121a;color:#cfeee3;padding:12px;border-radius:10px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.6);max-width:340px;font-size:13px;z-index:12010;line-height:1.35;
+  opacity:0;transform:translateY(6px);transition:opacity .18s ease, transform .18s ease;pointer-events:none;
+  left:0; top:0;
+}
 .tooltip.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.tooltip::after{
+  content:""; position:absolute; width:10px; height:10px; transform:rotate(45deg);
+  background:#02121a; left:50%; margin-left:-5px; top:-5px;
+}
 
 /* modal overlay must be on top */
 .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,11,0.6);display:none;align-items:center;justify-content:center;z-index:20000}
@@ -46,12 +81,16 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
 .modal h2{margin-top:0}
 .close-x{float:right;background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer}
 
+/* subtle focus ring for keyboard users */
+:focus{outline: none}
+:focus-visible{outline:2px solid rgba(0,209,178,0.18);outline-offset:2px;border-radius:6px}
+
 /* slight glow on active control */
 .active-tip{box-shadow:0 8px 24px var(--highlight);border-radius:8px;}
 
 /* responsive tweaks */
 @media(max-width:900px){
-  .outputs{grid-template-columns:repeat(2,1fr)} 
+  .outputs{grid-template-columns:repeat(2,1fr)}
   .grid-3{grid-template-columns:1fr}
   .header{flex-direction:column;align-items:flex-start}
   .subtitle{font-size:12px}
@@ -65,6 +104,9 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   .col{min-width:140px}
   .value{font-size:14px}
   h1{font-size:16px}
+  .tooltip{max-width:90%; font-size:13px}
+  /* make bubbles visible by default on small screens for clarity */
+  .range-bubble{display:block}
 }
 </style>
 </head>
@@ -87,41 +129,46 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   <div style="margin-top:10px" class="card">
     <div class="small" style="font-weight:600;color:#fff">Deal parameters (edit before adjusting sliders)</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Total on-the-road cash price of the car.">On-the-road price (£)</label><input id="price" type="number" value="39990"></div>
-      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Amount you pay up front (before dealer contribution).">Customer deposit (£)</label><input id="cust_dep" type="number" value="8600"></div>
-      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Dealer or manufacturer contribution to the deposit (reduces your outlay).">Dealer contribution (£)</label><input id="tesla_contrib" type="number" value="3000"></div>
-      <div class="col control-box" style="flex:1;min-width:120px"><label data-tip="Monthly repayment you make (or will be computed from APR if that option is checked).">Monthly payment (£)</label><input id="monthly" type="number" value="299"></div>
-      <div class="col control-box" style="flex:1;min-width:120px"><label data-tip="Number of monthly payments you'll make (excluding final balloon month).">Monthly payments (count)</label><input id="nmonthly" type="number" value="47"></div>
-      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Optional final balloon payment at the end if you keep the car. Uncheck 'I'll pay the balloon' to set to zero.">Optional final payment (balloon)</label><input id="balloon" type="number" value="17334"></div>
+      <div class="col control-box" style="flex:1;min-width:140px">
+        <label data-tip="Total on-the-road cash price of the car.">On-the-road price (£)</label>
+        <input id="price" type="number" inputmode="numeric" pattern="[0-9]*" value="39990" aria-label="Price in pounds">
+      </div>
+      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Amount you pay up front (before dealer contribution).">Customer deposit (£)</label><input id="cust_dep" type="number" inputmode="numeric" pattern="[0-9]*" value="8600"></div>
+      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Dealer or manufacturer contribution to the deposit (reduces your outlay).">Dealer contribution (£)</label><input id="tesla_contrib" type="number" inputmode="numeric" pattern="[0-9]*" value="3000"></div>
+      <div class="col control-box" style="flex:1;min-width:120px"><label data-tip="Monthly repayment you make (or will be computed from APR if that option is checked).">Monthly payment (£)</label><input id="monthly" type="number" inputmode="numeric" pattern="[0-9]*" value="299"></div>
+      <div class="col control-box" style="flex:1;min-width:120px"><label data-tip="Number of monthly payments you'll make (excluding final balloon month).">Monthly payments (count)</label><input id="nmonthly" type="number" inputmode="numeric" pattern="[0-9]*" value="47"></div>
+      <div class="col control-box" style="flex:1;min-width:140px"><label data-tip="Optional final balloon payment at the end if you keep the car. Uncheck 'I'll pay the balloon' to set to zero.">Optional final payment (balloon)</label><input id="balloon" type="number" inputmode="numeric" pattern="[0-9]*" value="17334"></div>
     </div>
     <div class="small" style="margin-top:8px">Tip: check "Compute monthly from Loan APR" below to auto-calc monthly payment from APR, financed amount and balloon.</div>
   </div>
 
   <div class="row" style="margin-top:10px;">
-    <div class="col control-box">
+    <div class="col control-box" data-control="nominal">
       <div class="label-row">
-        <label data-tip="Nominal pre-tax annual return you expect to earn on investments. This is before tax; tax can be applied to nominal or real returns via the toggle.">Nominal investment return (% pa)</label>
-        <span id="nominal_val" data-tip="Nominal return is your expected pre-tax annual investment return.">5.0</span>
+        <label for="nominal" data-tip="Nominal pre-tax annual return you expect to earn on investments. This is before tax; tax can be applied to nominal or real returns via the toggle.">Nominal investment return</label>
+        <span id="nominal_val" aria-live="polite" data-tip="Nominal return displayed as a percentage">5.0%</span>
       </div>
       <input id="nominal" type="range" min="0" max="12" step="0.1" value="5" aria-label="Nominal return">
-      <div class="value"><span style="color:var(--muted);font-weight:600;margin-right:6px">after tax:</span> <span id="nominal_after_tax" style="font-weight:700" data-tip="Nominal return after applying the tax slider.">3.75</span>%</div>
+      <div class="range-meta"><span class="min">0%</span><span class="max">12%</span></div>
+      <div class="value"><span class="muted">after tax:</span> <span id="nominal_after_tax" aria-live="polite" data-tip="Nominal return after applying the tax slider.">3.75%</span></div>
     </div>
 
-    <div class="col control-box">
+    <div class="col control-box" data-control="inflation">
       <div class="label-row">
-        <label data-tip="General price inflation used to compute the real discount rate (reduces purchasing power).">Inflation (% pa)</label>
-        <span id="inflation_val" data-tip="Inflation reduces the real value of money over time.">3.0</span>
+        <label for="inflation" data-tip="General price inflation used to compute the real discount rate (reduces purchasing power).">Inflation</label>
+        <span id="inflation_val" aria-live="polite" data-tip="Inflation as percent">3.0%</span>
       </div>
       <input id="inflation" type="range" min="0" max="8" step="0.1" value="3" aria-label="Inflation">
-      <div class="value"><span class="info" data-tip="General price inflation. Used to compute the real discount rate.">ℹ️</span></div>
+      <div class="range-meta"><span class="min">0%</span><span class="max">8%</span></div>
     </div>
 
-    <div class="col control-box">
+    <div class="col control-box" data-control="tax">
       <div class="label-row">
-        <label data-tip="Tax applied to investment gains. Use the toggle to apply tax to nominal or inflation-adjusted (real) returns.">Tax rate on returns (%)</label>
-        <span id="tax_val" data-tip="This percentage reduces your nominal returns when tax-on-nominal is selected.">25.0</span>
+        <label for="tax" data-tip="Tax applied to investment gains. Use the toggle to apply tax to nominal or inflation-adjusted (real) returns.">Tax rate on returns</label>
+        <span id="tax_val" aria-live="polite" data-tip="This percentage reduces your nominal returns when tax-on-nominal is selected.">25.0%</span>
       </div>
       <input id="tax" type="range" min="0" max="60" step="0.5" value="25" aria-label="Tax rate">
+      <div class="range-meta"><span class="min">0%</span><span class="max">60%</span></div>
       <div class="value">
         <div class="toggle" style="display:inline-flex;align-items:center;gap:8px">
           <input id="tax_on_real" type="checkbox"><label for="tax_on_real" class="small">Apply tax to inflation-adjusted (real) returns</label>
@@ -133,8 +180,8 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   <div class="row" style="margin-top:8px;">
     <div class="col control-box">
       <div class="label-row">
-        <label data-tip="Annual percentage rate for the loan. If 'Compute monthly from Loan APR' is checked, monthly payments are calculated from this APR.">Loan APR (%)</label>
-        <span data-tip="APR used to compute monthly payment when selected.">0.00</span>
+        <label for="loan_apr" data-tip="Annual percentage rate for the loan. If 'Compute monthly from Loan APR' is checked, monthly payments are calculated from this APR.">Loan APR (%)</label>
+        <span id="loan_apr_span" data-tip="APR used to compute monthly payment when selected.">0.00%</span>
       </div>
       <input id="loan_apr" type="number" step="0.01" value="0.00" aria-label="Loan APR">
       <div class="small" style="margin-top:6px">Set loan APR to see financing scenarios.</div>
@@ -190,10 +237,10 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   </div>
 
   <div class="footer small">To host this page online, upload the HTML file to GitHub Pages or Netlify. Use "Download HTML" to save a snapshot.</div>
-</div>
 
-<!-- tooltip element (lower z-index than modalBackdrop) -->
-<div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
+  <!-- tooltip element inserted inside container to avoid mobile viewport inset issues -->
+  <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
+</div>
 
 <!-- help modal (moved after tooltip to ensure overlay) -->
 <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
@@ -215,12 +262,14 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
 </div>
 
 <script>
-// helpers
+// --- helpers & formatters ---
 const fmt = x => '£' + Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const num2 = x => (Math.round(x*100)/100).toFixed(2);
 const csvEscape = s => (typeof s === 'number'? s : '"' + String(s).replace(/"/g,'""') + '"');
+const pct = (v, decimals=1) => (Number(v).toFixed(decimals)) + '%';
 
-// element refs
+// elements
+const container = document.getElementById('app');
 const tooltip = document.getElementById('tooltip');
 const helpBtn = document.getElementById('helpBtn');
 const modalBackdrop = document.getElementById('modalBackdrop');
@@ -231,7 +280,7 @@ const nominal = document.getElementById('nominal'), inflation = document.getElem
 const nominal_val = document.getElementById('nominal_val'), inflation_val = document.getElementById('inflation_val'), tax_val = document.getElementById('tax_val');
 const nominal_after_tax = document.getElementById('nominal_after_tax');
 const tax_on_real_cb = document.getElementById('tax_on_real');
-const loan_apr_el = document.getElementById('loan_apr'), use_loan_apr_cb = document.getElementById('use_loan_apr');
+const loan_apr_el = document.getElementById('loan_apr'), loan_apr_span = document.getElementById('loan_apr_span'), use_loan_apr_cb = document.getElementById('use_loan_apr');
 const pay_balloon_cb = document.getElementById('pay_balloon');
 
 const start_inv_el = document.getElementById('start_inv'), real_rate_el = document.getElementById('real_rate');
@@ -249,25 +298,31 @@ const exportCsvBtn = document.getElementById('exportCsvBtn'), exportMonthlyCsvBt
 
 const canvas = document.getElementById('chart'); const ctx = canvas.getContext('2d');
 
-// tooltip behavior: consistent — no timers, visible until click outside. lower z-index than modal.
+// --- Tooltip improvements ---
 let activeTipEl = null;
-function positionTooltipForEl(el){
+function computeTooltipPosition(el){
   const rect = el.getBoundingClientRect();
-  const width = tooltip.offsetWidth || 280;
-  let left = Math.min(window.innerWidth - width - 12, Math.max(8, rect.left + rect.width/2 - width/2));
-  let top = rect.top + rect.height + 12;
-  if(top + tooltip.offsetHeight + 12 > window.innerHeight){
-    top = rect.top - tooltip.offsetHeight - 12;
+  const crect = container.getBoundingClientRect();
+  const tooltipWidth = Math.min(340, Math.max(220, rect.width * 2));
+  let left = (rect.left - crect.left) + rect.width/2 - tooltipWidth/2;
+  left = Math.max(8, Math.min(crect.width - tooltipWidth - 8, left));
+  let top = (rect.top - crect.top) + rect.height + 12;
+  const estTooltipHeight = tooltip.offsetHeight || 64;
+  if(top + estTooltipHeight + 12 > crect.height){
+    top = (rect.top - crect.top) - estTooltipHeight - 12;
   }
   if(top < 8) top = 8;
-  tooltip.style.left = left + 'px';
-  tooltip.style.top = top + 'px';
+  return { left, top, width: tooltipWidth };
 }
 
 function showTooltipForElement(el){
   if(!el) return;
   const tip = el.getAttribute('data-tip');
   if(!tip) return;
+  if(activeTipEl === el){
+    hideTooltip();
+    return;
+  }
   if(activeTipEl && activeTipEl !== el){
     const containerPrev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
     if(containerPrev) containerPrev.classList.remove('active-tip');
@@ -276,10 +331,26 @@ function showTooltipForElement(el){
   tooltip.textContent = tip;
   tooltip.classList.add('visible');
   tooltip.setAttribute('aria-hidden','false');
-  const container = el.closest('.col') || el.closest('label') || el;
-  if(container) container.classList.add('active-tip');
-  requestAnimationFrame(()=> positionTooltipForEl(el));
+  const containerEl = el.closest('.col') || el.closest('label') || el;
+  if(containerEl) containerEl.classList.add('active-tip');
+  tooltip.style.width = '';
+  requestAnimationFrame(()=>{
+    const pos = computeTooltipPosition(el);
+    tooltip.style.left = pos.left + 'px';
+    tooltip.style.top = pos.top + 'px';
+    tooltip.style.width = pos.width + 'px';
+  });
+
   document.addEventListener('keydown', escHandler);
+  window.addEventListener('resize', repositionTooltip);
+  window.addEventListener('scroll', repositionTooltip, true);
+}
+
+function repositionTooltip(){
+  if(!activeTipEl) return;
+  const pos = computeTooltipPosition(activeTipEl);
+  tooltip.style.left = pos.left + 'px';
+  tooltip.style.top = pos.top + 'px';
 }
 
 function hideTooltip(){
@@ -287,45 +358,49 @@ function hideTooltip(){
   tooltip.classList.remove('visible');
   tooltip.setAttribute('aria-hidden','true');
   if(activeTipEl){
-    const container = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
-    if(container) container.classList.remove('active-tip');
+    const containerPrev = activeTipEl.closest('.col') || activeTipEl.closest('label') || activeTipEl;
+    if(containerPrev) containerPrev.classList.remove('active-tip');
     activeTipEl = null;
   }
   document.removeEventListener('keydown', escHandler);
+  window.removeEventListener('resize', repositionTooltip);
+  window.removeEventListener('scroll', repositionTooltip, true);
 }
+function escHandler(e){ if(e.key === 'Escape' || e.key === 'Esc') hideTooltip(); }
 
-function escHandler(e){
-  if(e.key === 'Escape' || e.key === 'Esc') hideTooltip();
-}
-
-// attach tooltip to data-tip elements (labels, values, icons)
+// attach tooltip handlers (click + hover)
+// also ensure labels/values reliably open the tooltip even when they focus inputs
 document.querySelectorAll('[data-tip]').forEach(el=>{
-  el.addEventListener('click', (ev)=>{
-    ev.stopPropagation();
-    if(activeTipEl === el) return;
-    showTooltipForElement(el);
-  });
-  // hover devices show on hover too
+  el.addEventListener('click', (ev)=>{ ev.stopPropagation(); showTooltipForElement(el); });
   if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
     el.addEventListener('mouseenter', ()=> showTooltipForElement(el));
     el.addEventListener('mouseleave', ()=> hideTooltip());
   }
 });
 
-// hide tooltip when clicking outside (but modal should still appear on top)
+// hide tooltip when clicking outside tooltip and data-tip elements
 document.addEventListener('click', (e)=>{
   if(e.target.closest('[data-tip]')) return;
   if(e.target.closest('#tooltip')) return;
   hideTooltip();
 });
 
-// modal behavior: ensure it overlays properly on mobile
-helpBtn.addEventListener('click', ()=>{ modalBackdrop.style.display='flex'; modalBackdrop.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden'; });
-modalClose.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
-modalClose2.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
-modalBackdrop.addEventListener('click',(e)=>{ if(e.target === modalBackdrop){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; } });
+// fix: inputs focus sometimes fires before click handler on labels (race). Delay hide check slightly.
+document.querySelectorAll('input, select, textarea, button').forEach(el=>{
+  el.addEventListener('focus', (ev)=>{
+    setTimeout(()=>{
+      const focused = document.activeElement;
+      // if tooltip is open and the focused element is inside same .col as activeTipEl, do nothing
+      if(activeTipEl && focused && focused.closest && activeTipEl.closest && focused.closest('.col') === activeTipEl.closest('.col')){
+        return;
+      }
+      // otherwise hide
+      hideTooltip();
+    }, 0);
+  });
+});
 
-// Financial functions & UI bindings (same as v6)
+// --- Financial functions (unchanged) ---
 function computeMonthlyFromAPR(financed, apr_annual, n, balloon_val){
   if(n <= 0) return 0;
   const r = Math.pow(1 + apr_annual, 1/12) - 1;
@@ -383,7 +458,6 @@ function getState(){
     monthly_used = computeMonthlyFromAPR(financed_amount, loan_apr, npay, balloon_val);
   }
 
-  // simulate balances and interest
   let balances = [], interest_arr = [], cum_interest = 0;
   let b = start_invested;
   balances.push(b); interest_arr.push(0);
@@ -415,12 +489,86 @@ function getState(){
   };
 }
 
+// --- UI binding & slider visuals ---
+// update a range's fill and bubble position
+function updateRangeVisual(rangeEl){
+  const min = parseFloat(rangeEl.min) || 0;
+  const max = parseFloat(rangeEl.max) || 100;
+  const val = parseFloat(rangeEl.value);
+  const pctVal = ( (val - min) / (max - min) ) * 100;
+  // colored fill for the left side
+  rangeEl.style.background = `linear-gradient(90deg, var(--accent) ${pctVal}%, rgba(255,255,255,0.06) ${pctVal}%)`;
+
+  // position bubble (we'll attach bubble element to the .col container)
+  const col = rangeEl.closest('.col');
+  if(!col) return;
+  let bubble = col.querySelector('.range-bubble');
+  if(!bubble){
+    bubble = document.createElement('span');
+    bubble.className = 'range-bubble';
+    col.appendChild(bubble);
+  }
+  // show bubble text with suitable precision depending on step
+  const step = parseFloat(rangeEl.step) || 1;
+  const decimals = (('' + step).includes('.')) ? (step.toString().split('.')[1].length) : 0;
+  const text = (Number(val).toFixed(decimals)) + '%';
+  bubble.textContent = text;
+  // compute left in px relative to col
+  const rect = rangeEl.getBoundingClientRect();
+  const crect = col.getBoundingClientRect();
+  const left = ( (pctVal/100) * (rect.width) ) + (rect.left - crect.left);
+  bubble.style.left = left + 'px';
+  // show bubble on small screens by default; on pointer devices show on hover/active
+  if(window.matchMedia('(hover: none)').matches){
+    bubble.style.display = 'block';
+  } else {
+    if(rangeEl.matches(':active')) bubble.style.display = 'block';
+    // otherwise leave visibility to pointerenter/pointerleave handlers
+  }
+}
+
+// wire up all ranges to update visuals
+function initRangeUI(){
+  document.querySelectorAll('input[type=range]').forEach(r=>{
+    const col = r.closest('.col');
+    if(col && !col.querySelector('.range-bubble')){
+      const b = document.createElement('span'); b.className='range-bubble'; col.appendChild(b);
+    }
+    updateRangeVisual(r);
+    r.addEventListener('input', ()=>{ updateRangeVisual(r); refresh(); });
+    r.addEventListener('pointerdown', ()=>{ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='block'; });
+    r.addEventListener('pointerup', ()=>{ const b = r.closest('.col').querySelector('.range-bubble'); if(b && window.matchMedia('(hover: hover)').matches) b.style.display='none'; });
+    // show bubble on hover for pointer devices that support hover
+    r.addEventListener('pointerenter', ()=>{ if(window.matchMedia('(hover: hover)').matches){ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='block'; } });
+    r.addEventListener('pointerleave', ()=>{ if(window.matchMedia('(hover: hover)').matches){ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='none'; } });
+    window.addEventListener('resize', ()=> updateRangeVisual(r));
+    window.addEventListener('scroll', ()=> updateRangeVisual(r), true);
+  });
+}
+
+// initialising min/max meta for any ranges lacking explicit meta (keeps markup small)
+function ensureRangeMeta(){
+  document.querySelectorAll('input[type=range]').forEach(r=>{
+    const col = r.closest('.col');
+    if(!col) return;
+    if(!col.querySelector('.range-meta')){
+      const meta = document.createElement('div'); meta.className = 'range-meta';
+      const min = r.getAttribute('min') || 0;
+      const max = r.getAttribute('max') || 100;
+      meta.innerHTML = `<span class="min">${min}%</span><span class="max">${max}%</span>`;
+      r.insertAdjacentElement('afterend', meta);
+    }
+  });
+}
+
+// --- refresh (display formatting changes only) ---
 function refresh(){
   const s = getState();
-  nominal_val.textContent = (s.nom*100).toFixed(1);
-  inflation_val.textContent = (s.inf*100).toFixed(1);
-  tax_val.textContent = (s.taxRate*100).toFixed(1);
-  nominal_after_tax.textContent = (s.after_tax_nom*100).toFixed(2);
+  // make these display as percentages (with suitable precision)
+  nominal_val.textContent = (s.nom*100).toFixed(1) + '%';
+  inflation_val.textContent = (s.inf*100).toFixed(1) + '%';
+  tax_val.textContent = (s.taxRate*100).toFixed(1) + '%';
+  nominal_after_tax.textContent = (s.after_tax_nom*100).toFixed(2) + '%';
 
   start_inv_el.textContent = fmt(s.start_invested);
   final_bal_el.textContent = fmt(s.final_nominal);
@@ -432,11 +580,12 @@ function refresh(){
   financed_amount_el.textContent = fmt(s.financed_amount);
 
   drawChart(s.balances);
-
+  // ensure sliders visuals are up-to-date and bubbles positioned
+  document.querySelectorAll('input[type=range]').forEach(r=> updateRangeVisual(r));
   return s;
 }
 
-// chart (unchanged)
+// --- chart (unchanged) ---
 function drawChart(data){
   const W = canvas.width = Math.min(960, Math.max(360, document.body.clientWidth * 0.65));
   const H = canvas.height = 320;
@@ -490,7 +639,7 @@ function drawChart(data){
   ctx.font = '12px system-ui, Arial'; ctx.fillText('£' + Math.round(data[N-1]).toLocaleString(), lastX-68, lastY-10);
 }
 
-// exports and copy unchanged
+// exports and copy (unchanged logic)
 function exportSummaryCSV(state){
   const rows = [
     ['Parameter','Value'],
@@ -529,7 +678,7 @@ function exportMonthlyCSV(state){
     cum += interest;
     let withdrawal = 0;
     if(i+1 <= state.npay) withdrawal = state.monthly_used; else withdrawal = state.ball;
-    lines.push([i, (Math.round(start*100)/100).toFixed(2), (Math.round(interest*100)/100).toFixed(2), (Math.round(withdrawal*100)/100).toFixed(2), (Math.round(state.balances[i+1]*100)/100).toFixed(2), (Math.round(cum*100)/100).toFixed(2)].join(','));
+    lines.push([i, (Math.round(start*100)/100).toFixed(02), (Math.round(interest*100)/100).toFixed(02), (Math.round(withdrawal*100)/100).toFixed(02), (Math.round(state.balances[i+1]*100)/100).toFixed(02), (Math.round(cum*100)/100).toFixed(02)].join(','));
   }
   const csv = lines.join('\n');
   triggerDownload(csv, 'pcp_playground_monthly_v7.csv', 'text/csv');
@@ -590,7 +739,15 @@ document.getElementById('exportSummaryBtn').addEventListener('click', ()=>{ cons
 document.getElementById('exportMonthlyBtn').addEventListener('click', ()=>{ const s = getState(); exportMonthlyCSV(s); });
 document.getElementById('copyBtn').addEventListener('click', ()=>{ const s = getState(); copySummaryToClipboard(s); });
 
-// initial render
+// modal behavior
+helpBtn.addEventListener('click', ()=>{ modalBackdrop.style.display='flex'; modalBackdrop.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden'; });
+modalClose.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
+modalClose2.addEventListener('click', ()=>{ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; });
+modalBackdrop.addEventListener('click',(e)=>{ if(e.target === modalBackdrop){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; } });
+
+// initial setup
+ensureRangeMeta();
+initRangeUI();
 refresh();
 </script>
 </body>
