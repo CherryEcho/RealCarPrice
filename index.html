@@ -142,7 +142,7 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent;ma
 <div class="container card" id="app">
   <div class="header">
     <div>
-      <h1 id="title">PCP & Financing Playground — Real Cost Calculator (v7)</h1>
+      <h1 id="title">PCP & Financing Playground — Real Cost Calculator</h1>
       <div class="subtitle" id="subtitle">Compare paying cash vs spreading payments. Experiment with returns, inflation, tax, loan APR and balloon options. Works offline.</div>
     </div>
     <div class="inline">
@@ -280,7 +280,7 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent;ma
     </div>
   </div>
 
-  <div class="footer small">To host this page online, upload the HTML file to GitHub Pages or Netlify. Use "Download HTML" to save a snapshot.</div>
+  <div class="footer small">Use "Download HTML" to save a snapshot of the current state.</div>
 
   <!-- tooltip element inserted inside container to avoid mobile viewport inset issues -->
   <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
@@ -717,7 +717,7 @@ function exportSummaryCSV(state){
     ['Cumulative interest earned (nominal)', parseFloat(state.cumulative_interest).toFixed(2)]
   ];
   let csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
-  triggerDownload(csv, 'pcp_playground_summary_v7.csv', 'text/csv');
+  triggerDownload(csv, 'pcp_playground_summary.csv', 'text/csv');
 }
 
 function exportMonthlyCSV(state){
@@ -733,7 +733,7 @@ function exportMonthlyCSV(state){
     lines.push([i, (Math.round(start*100)/100).toFixed(2), (Math.round(interest*100)/100).toFixed(2), (Math.round(withdrawal*100)/100).toFixed(2), (Math.round(state.balances[i+1]*100)/100).toFixed(2), (Math.round(cum*100)/100).toFixed(2)].map(csvEscape).join(','));
   }
   const csv = lines.join('\n');
-  triggerDownload(csv, 'pcp_playground_monthly_v7.csv', 'text/csv');
+  triggerDownload(csv, 'pcp_playground_monthly.csv', 'text/csv');
 }
 
 function triggerDownload(content, filename, mime){
@@ -781,7 +781,7 @@ downloadBtn.addEventListener('click', ()=>{
   const htmlContent = '<!doctype html>\\n' + document.documentElement.outerHTML;
   const blob = new Blob([htmlContent], {type: 'text/html'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'pcp_financing_playground_v7.html'; document.body.appendChild(a);
+  const a = document.createElement('a'); a.href = url; a.download = 'pcp_financing_playground.html'; document.body.appendChild(a);
   a.click(); a.remove(); URL.revokeObjectURL(url);
 });
 
