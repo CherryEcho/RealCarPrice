@@ -245,16 +245,16 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent;ma
     </div>
   </div>
 
-  <div class="outputs" style="margin-top:10px">
-    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate" data-tip="Annual real discount rate used to discount future payments (investment return after tax, ad..."></div></div>
-    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv" data-tip="The nominal amount you would have invested at the start if you don't pay cash (price minus net...)"></div></div>
-    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal" data-tip="Nominal balance remaining in the investment at the end of the term after monthly wit..."></div></div>
-    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price" data-tip="Present value (PV) of your payments: net deposit + discounted monthly payments + disc..."></div></div>
-    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving" data-tip="Difference between paying cash today and the effective price. Positive means financing saves y..."></div></div>
-    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest" data-tip="Total nominal interest earned on the invested funds across the whole term (not ...)"></div></div>
-    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used" data-tip="Monthly payment used in the model (either your input or computed from Loan APR if selected)."></div></div>
-    <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount" data-tip="Amount financed by the lender (price minus customer deposit)">—</div></div>
-  </div>
+    <div class="outputs" style="margin-top:10px">
+    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate" data-tip="Annual real discount rate used to discount future payments (investment return after tax, adjusted for inflation).">—</div></div>
+    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv" data-tip="The nominal amount you would have invested at the start if you don't pay cash (price minus net deposit).">—</div></div>
+    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal" data-tip="Nominal balance remaining in the investment at the end of the term after monthly withdrawals and balloon.">—</div></div>
+    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price" data-tip="Present value (PV) of your payments: net deposit + discounted monthly payments + discounted balloon.">—</div></div>
+    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving" data-tip="Difference between paying cash today and the effective price. Positive means financing saves you money today.">—</div></div>
+    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest" data-tip="Total nominal interest earned on the invested funds across the whole term (not inflation-adjusted).">—</div></div>
+    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used" data-tip="Monthly payment used in the model (either your input or computed from Loan APR if selected).">—</div></div>
+    <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount" data-tip="Amount financed by the lender (price minus customer deposit).">—</div></div>
+  </div> 
 
   <div class="grid-3" style="margin-top:10px">
     <div class="card" style="padding:10px;text-align:center">
