@@ -10,9 +10,12 @@
   --highlight:rgba(0,209,178,0.12);color-scheme:dark;
   --gap:10px; --radius:10px; --ui-padding:12px;
 }
+/* make sizing predictable and avoid unexpected overflow on small devices */
+*, *::before, *::after { box-sizing: border-box; }
 html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial, sans-serif;
   background:linear-gradient(180deg,#071026 0%, #071a2b 100%);color:#e6eef6;
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  overflow-x: hidden; /* prevent slight horizontal scroll on some Android browsers */
 }
 .container{max-width:1100px;margin:18px auto;padding:12px; position:relative;}
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
@@ -20,9 +23,10 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helv
 h1{margin:0;font-size:18px}
 .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.col{flex:1 1 240px;min-width:200px;position:relative}
+.col{flex:1 1 240px;min-width:0;position:relative} /* allow grid items to shrink on narrow viewports */
 .control-box{padding:12px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03)}
-.label-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+/* make label-row relative so we can add an invisible hit area on touch devices without changing layout */
+.label-row{display:flex;justify-content:space-between;align-items:center;gap:8px; position:relative}
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;cursor:pointer}
 input[type=range]{width:100%; -webkit-appearance:none; appearance:none; height:40px; background:transparent; margin:0; padding:0; touch-action:pan-x;}
 
@@ -40,7 +44,7 @@ input[type=range]:focus { outline: none; }
   position:absolute; transform:translate(-50%, -120%); top:8px;
   background:#02121a;color:#cfeee3;padding:6px 8px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.4);font-weight:700;font-size:13px;white-space:nowrap;pointer-events:none;
   z-index:8;
-  display:none;
+  display:none; /* default hidden; JS controls visibility while interacting */
 }
 .range-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
 
@@ -57,7 +61,7 @@ input[type=range]:focus { outline: none; }
 .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
 .btn{background:var(--accent);color:#052026;padding:8px 10px;border-radius:10px;font-weight:700;border:none;cursor:pointer; touch-action:manipulation}
 .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:7px 10px;border-radius:8px;cursor:pointer; touch-action:manipulation}
-canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
+canvas{display:block;margin:8px auto;border-radius:8px;background:transparent;max-width:100%;height:auto}
 .footer{margin-top:10px;color:var(--muted);font-size:12px}
 .inline{display:flex;gap:8px;align-items:center}
 .legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
@@ -108,9 +112,30 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   .value{font-size:14px}
   h1{font-size:16px}
   .tooltip{max-width:90%; font-size:13px}
-  /* make bubbles visible by default on small screens for clarity */
-  .range-bubble{display:block}
+  /* bubbles will be controlled by JS so they only show while interacting on mobile */
 }
+
+/* Invisible touch hit area for small/touch devices so tooltips can be reliably toggled
+   without altering layout or adding visible icons. This avoids interfering with sliders
+   because the hit area is confined to the label-row (label + value) region only. */
+.touch-tip-hitarea{
+  position:absolute;
+  inset:0;
+  background:transparent;
+  border:0;
+  padding:0;
+  margin:0;
+  z-index:15;
+  cursor:pointer;
+  display:none; /* only enabled on touch-only devices */
+}
+/* enable the invisible hit areas on touch-only devices where hover isn't available */
+@media (hover: none) and (pointer: coarse) {
+  .touch-tip-hitarea{ display:block; }
+  /* ensure label-row keeps compact height to avoid overlapping slider controls visually */
+  .label-row{padding-top:6px;padding-bottom:6px}
+}
+
 </style>
 </head>
 <body>
@@ -165,6 +190,7 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
       <div class="label-row">
         <label for="nominal" data-tip="Investment return you expect to earn on investments before tax.">Investment return</label>
         <span id="nominal_val" aria-live="polite" data-tip="Investment return displayed as a percentage">5.0%</span>
+        <!-- touch hit area will be inserted here on touch devices by JS (invisible, doesn't change layout) -->
       </div>
       <input id="nominal" type="range" min="0" max="12" step="0.1" value="5" aria-label="Investment return">
       <div class="range-meta"><span class="min">0%</span><span class="max">12%</span></div>
@@ -220,14 +246,14 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
   </div>
 
   <div class="outputs" style="margin-top:10px">
-    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate" data-tip="Annual real discount rate used to discount future payments (investment return after tax, adjusted for inflation).">—</div></div>
-    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv" data-tip="The nominal amount you would have invested at the start if you don't pay cash (price minus net deposit).">—</div></div>
-    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal" data-tip="Nominal balance remaining in the investment at the end of the term after monthly withdrawals and balloon (if paid).">—</div></div>
-    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price" data-tip="Present value (PV) of your payments: net deposit + discounted monthly payments + discounted balloon using the real discount rate.">—</div></div>
-    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving" data-tip="Difference between paying cash today and the effective price. Positive means financing saves you money compared with paying cash.">—</div></div>
-    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest" data-tip="Total nominal interest earned on the invested funds across the whole term (not inflation-adjusted).">—</div></div>
-    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used" data-tip="Monthly payment used in the model (either your input or computed from Loan APR if selected).">—</div></div>
-    <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount" data-tip="Amount financed by the lender (price minus customer deposit).">—</div></div>
+    <div class="out"><div class="k">Real discount rate (annual)</div><div class="v" id="real_rate" data-tip="Annual real discount rate used to discount future payments (investment return after tax, ad..."></div></div>
+    <div class="out"><div class="k">Start invested (nominal)</div><div class="v" id="start_inv" data-tip="The nominal amount you would have invested at the start if you don't pay cash (price minus net...)"></div></div>
+    <div class="out"><div class="k">Final nominal balance (after term)</div><div class="v" id="final_bal" data-tip="Nominal balance remaining in the investment at the end of the term after monthly wit..."></div></div>
+    <div class="out"><div class="k">Effective price today (your cost)</div><div class="v" id="eff_price" data-tip="Present value (PV) of your payments: net deposit + discounted monthly payments + disc..."></div></div>
+    <div class="out"><div class="k">Saving vs paying cash today</div><div class="v" id="saving" data-tip="Difference between paying cash today and the effective price. Positive means financing saves y..."></div></div>
+    <div class="out"><div class="k">Cumulative interest earned (nominal)</div><div class="v" id="cum_interest" data-tip="Total nominal interest earned on the invested funds across the whole term (not ...)"></div></div>
+    <div class="out"><div class="k">Monthly payment used</div><div class="v" id="monthly_used" data-tip="Monthly payment used in the model (either your input or computed from Loan APR if selected)."></div></div>
+    <div class="out"><div class="k">Financed amount</div><div class="v" id="financed_amount" data-tip="Amount financed by the lender (price minus customer deposit)">—</div></div>
   </div>
 
   <div class="grid-3" style="margin-top:10px">
@@ -266,9 +292,9 @@ canvas{display:block;margin:8px auto;border-radius:8px;background:transparent}
     <button class="close-x" id="modalClose" title="Close">✕</button>
     <h2 id="helpTitle">Help & FAQ</h2>
     <h3>What does this do?</h3>
-    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return after tax adjusted for inflation) and shows the PV of your payment stream so you can compare the effective cost.</p>
+    <p>This calculator compares paying cash today versus keeping cash invested and making PCP-like payments. It discounts your payments using a <strong>real</strong> discount rate (investment return a[...]</p>
     <h3>Tooltips</h3>
-    <p>Tap the ℹ️ icon, the label, or the numeric value next to a control to open a tooltip. The tooltip will remain open until you tap anywhere outside it. Press <kbd>Esc</kbd> to dismiss on keyboard.</p>
+    <p>Tap the ℹ️ icon, the label, or the numeric value next to a control to open a tooltip. The tooltip will remain open until you tap anywhere outside it. Press <kbd>Esc</kbd> to dismiss on keyb[...]</p>
     <h3>Loan APR vs monthly</h3>
     <p>Check "Compute monthly payment from Loan APR" to auto-calc monthly payments using the APR, financed amount (price - customer deposit) and balloon.</p>
     <h3>Balloon</h3>
@@ -553,11 +579,9 @@ function updateRangeVisual(rangeEl){
   const crect = col.getBoundingClientRect();
   const left = ( (pctVal/100) * (rect.width) ) + (rect.left - crect.left);
   bubble.style.left = left + 'px';
-  if(window.matchMedia('(hover: none)').matches){
-    bubble.style.display = 'block';
-  } else {
-    if(rangeEl.matches(':active')) bubble.style.display = 'block';
-  }
+
+  // show bubble only while actively interacting. Pointer handlers manage visibility on touch devices.
+  if(rangeEl.matches(':active')) bubble.style.display = 'block'; else bubble.style.display = 'none';
 }
 
 function initRangeUI(){
@@ -569,7 +593,7 @@ function initRangeUI(){
     updateRangeVisual(r);
     r.addEventListener('input', ()=>{ updateRangeVisual(r); refresh(); });
     r.addEventListener('pointerdown', ()=>{ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='block'; });
-    r.addEventListener('pointerup', ()=>{ const b = r.closest('.col').querySelector('.range-bubble'); if(b && window.matchMedia('(hover: hover)').matches) b.style.display='none'; });
+    r.addEventListener('pointerup', ()=>{ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='none'; });
     r.addEventListener('pointerenter', ()=>{ if(window.matchMedia('(hover: hover)').matches){ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='block'; } });
     r.addEventListener('pointerleave', ()=>{ if(window.matchMedia('(hover: hover)').matches){ const b = r.closest('.col').querySelector('.range-bubble'); if(b) b.style.display='none'; } });
     window.addEventListener('resize', ()=> updateRangeVisual(r));
@@ -706,7 +730,7 @@ function exportMonthlyCSV(state){
     cum += interest;
     let withdrawal = 0;
     if(i+1 <= state.npay) withdrawal = state.monthly_used; else withdrawal = state.ball;
-    lines.push([i, (Math.round(start*100)/100).toFixed(2), (Math.round(interest*100)/100).toFixed(2), (Math.round(withdrawal*100)/100).toFixed(2), (Math.round(state.balances[i+1]*100)/100).toFixed(2), (Math.round(cum*100)/100).toFixed(2)].join(','));
+    lines.push([i, (Math.round(start*100)/100).toFixed(2), (Math.round(interest*100)/100).toFixed(2), (Math.round(withdrawal*100)/100).toFixed(2), (Math.round(state.balances[i+1]*100)/100).toFixed(2), (Math.round(cum*100)/100).toFixed(2)].map(csvEscape).join(','));
   }
   const csv = lines.join('\n');
   triggerDownload(csv, 'pcp_playground_monthly_v7.csv', 'text/csv');
@@ -812,6 +836,33 @@ refresh();
       el.__tooltip_touch_added = true;
     }
   });
+
+  // Create invisible touch hit areas over the label-row regions for the three controls.
+  // This ensures taps on the label/value reliably toggle tooltips on mobile without adding visible icons
+  // or changing layout. Only created on touch devices.
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+  if(isTouch){
+    const selectors = ['label[for="nominal"]', '#nominal_val', 'label[for="inflation"]', '#inflation_val', 'label[for="tax"]', '#tax_val'];
+    selectors.forEach(sel=>{
+      const el = document.querySelector(sel);
+      if(!el) return;
+      const parent = el.closest('.label-row');
+      if(!parent) return;
+      // don't create duplicate hit areas
+      if(parent.querySelector('.touch-tip-hitarea')) return;
+      // ensure parent is positioned (CSS already sets .label-row to position:relative, but be safe)
+      if(getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+      const btn = document.createElement('button');
+      btn.className = 'touch-tip-hitarea';
+      btn.type = 'button';
+      // visually hidden/invisible but accessible to touches; mark aria-hidden because it's decorative
+      btn.setAttribute('aria-hidden','true');
+      // hook touchend/click to toggle tooltip for the intended element
+      btn.addEventListener('touchend', function(ev){ ev.preventDefault && ev.preventDefault(); ev.stopPropagation && ev.stopPropagation(); safeShow(el); }, {passive:false});
+      btn.addEventListener('click', function(ev){ ev.stopPropagation && ev.stopPropagation(); safeShow(el); });
+      parent.appendChild(btn);
+    });
+  }
 })();
 </script>
 </body>
